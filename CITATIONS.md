@@ -12,3 +12,8 @@ References and helpful resources
 - Qualtran: https://github.com/quantumlib/Qualtran
 - JAX-Metal: https://github.com/google/jax-metal
 
+## Core theory references
+- Gottesman–Knill theorem: Efficient stabilizer simulation (D. Gottesman 1998; S. Aaronson & D. Gottesman 2004). arXiv:quant-ph/9807006, arXiv:quant-ph/0406196
+- Stabilizer-rank / Clifford+T simulation: S. Bravyi & D. Gosset (2016). arXiv:1601.07601; follow‑ups on low‑rank decompositions (2019+).
+- Tensor networks and treewidth: I. Markov & Y. Shi (2008). SIAM J. Comput.; arXiv:quant-ph/0511069. Overview of contraction complexity and graph structure.
+- Slightly entangled simulations: G. Vidal (2003). Phys. Rev. Lett. 91, 147902.
