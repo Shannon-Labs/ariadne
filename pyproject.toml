@@ -1,0 +1,83 @@
+[project]
+name = "ariadne-classical-twin"
+version = "0.4.0"
+description = "Ariadne: a software-only Classical Twin for quantum programs (QASM3 parsing, verification, mitigation, routing, and FT resource estimation)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [
+  { name = "Ariadne Contributors" }
+]
+dependencies = [
+  "qiskit>=1.0",
+  "qiskit-aer>=0.13",
+  "openqasm3>=0.5",
+  "mitiq>=0.33",
+  "stim>=1.12",
+  "mqt.qcec>=1.6",
+  "mqt.ddsim>=1.8",
+  "quimb>=1.6.3",
+  "cotengra>=0.7",
+  "opt_einsum>=3.3",
+  "numpy>=1.26",
+  "scipy>=1.11",
+  "networkx>=3.2",
+  "rich>=13.7",
+  "typer>=0.12",
+  "pytest>=8.0",
+  "mypy>=1.10",
+  "ruff>=0.5",
+  "qualtran>=0.2",
+  "azure-quantum==1.*",
+]
+
+[project.optional-dependencies]
+apple = [
+  "jax>=0.4; platform_system=='Darwin' and platform_machine=='arm64'",
+  "jaxlib>=0.4; platform_system=='Darwin' and platform_machine=='arm64'",
+  "jax-metal>=0.1; platform_system=='Darwin' and platform_machine=='arm64'",
+]
+mitiq = ["mitiq>=0.33"]
+viz = ["matplotlib>=3.8", "pandas>=2.0"]
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "types-PyYAML>=6.0.12.20240808"]
+
+[project.scripts]
+ariadne = "ariadne.cli:app"
+ariadne-mac = "ariadne_mac.cli:app"
+
+[tool.ruff]
+line-length = 100
+select = ["E","F","I","UP","B","C4","SIM","PL"]
+ignore = ["E203","E266","E501"]
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+warn_unreachable = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+strict_equality = true
+namespace_packages = true
+explicit_package_bases = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "tests_mac"]
+addopts = "-q"
+markers = [
+  "slow: marks tests as slow",
+  "azure: requires Azure workspace configured",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ariadne*", "ariadne_mac*"]
