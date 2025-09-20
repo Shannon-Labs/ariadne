@@ -1,0 +1,24 @@
+# Core Dependencies for Ariadne Quantum Router
+# Shannon Labs Inc. | MIT License
+
+# Quantum Computing Frameworks
+qiskit>=2.1.1
+qiskit-aer>=0.17.2
+stim>=1.15.0
+
+# Tensor Network Libraries
+quimb>=1.11.2
+cotengra>=0.7.5
+opt_einsum>=3.3
+
+# Decision Diagram Simulator
+mqt.ddsim>=2.0.0
+
+# Scientific Computing
+numpy>=1.21
+scipy>=1.7
+networkx>=3.0
+
+# Apple Silicon Optimization (optional)
+# jax>=0.4; platform_system=='Darwin' and platform_machine=='arm64'
+# jax-metal>=0.1; platform_system=='Darwin' and platform_machine=='arm64'
