@@ -1,9 +1,8 @@
-from importlib.metadata import version, PackageNotFoundError
+"""Ariadne Quantum Router.
 
-__all__ = ["__version__"]
+Built by Shannon Labs | Production quantum security at entruptor.com
+"""
 
-try:
-    __version__ = version("ariadne-classical-twin")
-except PackageNotFoundError:  # pragma: no cover
-    __version__ = "0.0.0"
+from .router import QuantumRouter, SimulationResult, simulate
 
+__all__ = ["QuantumRouter", "SimulationResult", "simulate"]

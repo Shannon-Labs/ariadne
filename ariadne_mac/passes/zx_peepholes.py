@@ -15,9 +15,9 @@ def cancel_h_pairs(circ: QuantumCircuit) -> QuantumCircuit:
         inst, qargs, cargs = data[i]
         if i + 1 < len(data):
             inst2, qargs2, cargs2 = data[i + 1]
-            if inst.name == "h" and inst2.name == "h" and [q.index for q in qargs] == [
-                q.index for q in qargs2
-            ]:
+            if inst.name == "h" and inst2.name == "h" and # Qiskit 2.x no longer exposes .index directly, so pre-compute lookup table
+    qubit_index_map = {qubit: idx for idx, qubit in enumerate(circ.qubits)}
+    [qubit_index_map[q] for q in qargs] == [qubit_index_map[q] for q in qargs2]:
                 i += 2
                 continue
         out.append(inst, qargs, cargs)
@@ -33,9 +33,9 @@ def cancel_adjacent_cx(circ: QuantumCircuit) -> QuantumCircuit:
         inst, qargs, cargs = data[i]
         if i + 1 < len(data):
             inst2, qargs2, cargs2 = data[i + 1]
-            if inst.name == inst2.name == "cx" and [q.index for q in qargs] == [
-                q.index for q in qargs2
-            ]:
+            if inst.name == inst2.name == "cx" and # Qiskit 2.x no longer exposes .index directly, so pre-compute lookup table
+    qubit_index_map = {qubit: idx for idx, qubit in enumerate(circ.qubits)}
+    [qubit_index_map[q] for q in qargs] == [qubit_index_map[q] for q in qargs2]:
                 i += 2
                 continue
         out.append(inst, qargs, cargs)

@@ -24,9 +24,11 @@ def is_clifford_circuit(circ: QuantumCircuit) -> bool:
 def interaction_graph(circ: QuantumCircuit) -> nx.Graph:
     g = nx.Graph()
     g.add_nodes_from(range(circ.num_qubits))
+    # Qiskit 2.x no longer exposes .index directly, so pre-compute lookup table
+    qubit_index_map = {qubit: idx for idx, qubit in enumerate(circ.qubits)}
     for inst, qargs, _ in circ.data:
         if inst.num_qubits == 2:
-            u, v = [q.index for q in qargs]
+            u, v = [qubit_index_map[q] for q in qargs]
             if u != v:
                 g.add_edge(u, v)
     return g
@@ -69,7 +71,9 @@ def two_qubit_depth(circ: QuantumCircuit) -> int:
     current_layer_qubits = set()
     for inst, qargs, _ in circ.data:
         if inst.num_qubits == 2:
-            qubits = {q.index for q in qargs}
+            # Qiskit 2.x no longer exposes .index directly, so pre-compute lookup table
+            qubit_index_map = {qubit: idx for idx, qubit in enumerate(circ.qubits)}
+            qubits = {qubit_index_map[q] for q in qargs}
             if current_layer_qubits & qubits:
                 depth += 1
                 current_layer_qubits = set(qubits)

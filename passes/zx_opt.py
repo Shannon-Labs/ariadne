@@ -38,7 +38,9 @@ def two_qubit_depth(circ: QuantumCircuit) -> int:
     current_layer_qubits = set()
     for inst, qargs, _ in circ.data:
         if inst.name in CLIFFORD_TWO_Q or inst.num_qubits == 2:
-            qubits = {q.index for q in qargs}
+            # Qiskit 2.x no longer exposes .index directly, so pre-compute lookup table
+    qubit_index_map = {qubit: idx for idx, qubit in enumerate(circ.qubits)}
+    qubits = {qubit_index_map[q] for q in qargs}
             if current_layer_qubits & qubits:
                 depth += 1
                 current_layer_qubits = set(qubits)
@@ -58,8 +60,12 @@ def trivial_cancel(circ: QuantumCircuit) -> QuantumCircuit:
             inst2, qargs2, cargs2 = data[i + 1]
             if (
                 inst.name == inst2.name
-                and [q.index for q in qargs] == [q.index for q in qargs2]
-                and [c.index for c in cargs] == [c.index for c in cargs2]
+                and # Qiskit 2.x no longer exposes .index directly, so pre-compute lookup table
+    qubit_index_map = {qubit: idx for idx, qubit in enumerate(circ.qubits)}
+    [qubit_index_map[q] for q in qargs] == [qubit_index_map[q] for q in qargs2]
+                and # Qiskit 2.x no longer exposes .index directly, so pre-compute lookup table
+    clbit_index_map = {clbit: idx for idx, clbit in enumerate(circ.clbits)}
+    [clbit_index_map[c] for c in cargs] == [clbit_index_map[c] for c in cargs2]
                 and inst.name in {"h", "x", "y", "z", "cx"}
             ):
                 i += 2

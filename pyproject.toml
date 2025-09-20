@@ -1,34 +1,47 @@
 [project]
-name = "ariadne-classical-twin"
-version = "0.4.0"
-description = "Ariadne: a software-only Classical Twin for quantum programs (QASM3 parsing, verification, mitigation, routing, and FT resource estimation)."
+name = "ariadne-quantum"
+version = "1.0.0"
+description = "Ariadne: Quantum Computing on Your Laptop - OpenQASM 3 quantum circuit simulator with intelligent backend routing"
 readme = "README.md"
-requires-python = ">=3.11"
-license = { text = "Apache-2.0" }
+requires-python = ">=3.8"
+license = { text = "MIT" }
 authors = [
-  { name = "Ariadne Contributors" }
+  { name = "Shannon Labs" }
+]
+keywords = ["quantum", "simulator", "qasm3", "quantum-computing", "education", "research"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Topic :: Education",
+  "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
   "qiskit>=1.0",
   "qiskit-aer>=0.13",
   "openqasm3>=0.5",
-  "mitiq>=0.33",
   "stim>=1.12",
-  "mqt.qcec>=1.6",
-  "mqt.ddsim>=1.8",
   "quimb>=1.6.3",
   "cotengra>=0.7",
   "opt_einsum>=3.3",
-  "numpy>=1.26",
-  "scipy>=1.11",
-  "networkx>=3.2",
-  "rich>=13.7",
-  "typer>=0.12",
-  "pytest>=8.0",
-  "mypy>=1.10",
-  "ruff>=0.5",
-  "qualtran>=0.2",
-  "azure-quantum==1.*",
+  "numpy>=1.21",
+  "scipy>=1.7",
+  "networkx>=3.0",
+  "rich>=12.0",
+  "typer>=0.7",
+  "pytest>=7.0",
+  "pytest-cov>=3.0",
+  "mypy>=0.950",
+  "ruff>=0.1.0",
 ]
 
 [project.optional-dependencies]
@@ -37,47 +50,92 @@ apple = [
   "jaxlib>=0.4; platform_system=='Darwin' and platform_machine=='arm64'",
   "jax-metal>=0.1; platform_system=='Darwin' and platform_machine=='arm64'",
 ]
-mitiq = ["mitiq>=0.33"]
-viz = ["matplotlib>=3.8", "pandas>=2.0"]
-dev = ["pytest>=8.0", "pytest-cov>=5.0", "types-PyYAML>=6.0.12.20240808"]
+viz = [
+  "matplotlib>=3.5",
+  "seaborn>=0.11",
+  "plotly>=5.0",
+]
+dev = [
+  "pytest>=7.0",
+  "pytest-cov>=3.0",
+  "black>=22.0",
+  "isort>=5.10",
+  "pre-commit>=2.17",
+  "mypy>=0.950",
+]
+docs = [
+  "sphinx>=5.0",
+  "sphinx-rtd-theme>=1.2",
+  "myst-parser>=0.18",
+]
 
 [project.scripts]
 ariadne = "ariadne.cli:app"
-ariadne-mac = "ariadne_mac.cli:app"
+ariadne-sim = "ariadne.simulator:cli"
 
 [tool.ruff]
-line-length = 100
-select = ["E","F","I","UP","B","C4","SIM","PL"]
-ignore = ["E203","E266","E501"]
-target-version = "py311"
+line-length = 88
+target-version = "py38"
+select = ["E", "F", "I", "N", "B", "C4", "UP"]
+ignore = ["E501", "B008"]
+
+[tool.ruff.per-file-ignores]
+"tests/*" = ["B011"]
+"examples/*" = ["B006"]
 
 [tool.mypy]
-python_version = "3.11"
-warn_unused_configs = true
-warn_redundant_casts = true
-warn_unused_ignores = true
+python_version = "3.8"
 warn_return_any = true
-warn_unreachable = true
+warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 check_untyped_defs = true
+disallow_untyped_decorators = true
 no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
 strict_equality = true
-namespace_packages = true
-explicit_package_bases = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "tests_mac"]
-addopts = "-q"
+testpaths = ["tests"]
+addopts = "-v --tb=short --strict-markers"
 markers = [
-  "slow: marks tests as slow",
-  "azure: requires Azure workspace configured",
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "integration: marks tests as integration tests",
+  "unit: marks tests as unit tests",
+]
+
+[tool.coverage.run]
+source = ["ariadne"]
+omit = ["*/tests/*", "*/test_*"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "if self.debug:",
+  "if settings.DEBUG",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if 0:",
+  "if __name__ == .__main__.:",
+  "class .*\\bProtocol\\):",
+  "@(abc\\.)?abstractmethod",
 ]
 
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["ariadne*", "ariadne_mac*"]
+include = ["ariadne*"]
+exclude = ["tests*", "docs*"]
+
+[tool.setuptools.package-data]
+ariadne = ["*.txt", "*.md", "*.yml", "*.yaml"]

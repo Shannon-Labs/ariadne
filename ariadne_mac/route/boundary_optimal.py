@@ -143,7 +143,10 @@ def initialize_sv_tn_from_clifford(
     # Apply U_A to the A register only
     # Map U_A gates to appropriate qubit indices
     for gate, qargs, cargs in canonical.U_A.data:
-        mapped_qargs = [A.index(canonical.cut_qubits[q.index]) for q in qargs]
+        # Qiskit 2.x no longer exposes .index directly, so pre-compute lookup tables
+    A_index_map = {qubit: idx for idx, qubit in enumerate(A)}
+    cut_qubits_map = {qubit: idx for idx, qubit in enumerate(canonical.cut_qubits)}
+    mapped_qargs = [A_index_map[canonical.cut_qubits[cut_qubits_map[q]]] for q in qargs]
         qc.append(gate, mapped_qargs, cargs)
     
     return qc, ancilla_indices
