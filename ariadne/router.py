@@ -359,8 +359,30 @@ class QuantumRouter:
         return 1.0
 
 
-def simulate(circuit: QuantumCircuit, shots: int = 1024) -> SimulationResult:
+def simulate(circuit: QuantumCircuit, shots: int = 1024, backend: Optional[str] = None) -> SimulationResult:
     """Convenience wrapper that routes and executes ``circuit``."""
 
     router = QuantumRouter()
+    
+    if backend is not None:
+        # Force specific backend
+        try:
+            backend_type = BackendType(backend)
+        except ValueError:
+            raise ValueError(f"Unknown backend: {backend}")
+        
+        # Create a custom router that only uses the specified backend
+        class ForcedRouter(QuantumRouter):
+            def select_optimal_backend(self, circuit: QuantumCircuit) -> RoutingDecision:
+                return RoutingDecision(
+                    circuit_entropy=0.0,
+                    recommended_backend=backend_type,
+                    confidence_score=1.0,
+                    expected_speedup=1.0,
+                    channel_capacity_match=1.0,
+                    alternatives=[]
+                )
+        
+        router = ForcedRouter()
+    
     return router.simulate(circuit, shots)

@@ -3,7 +3,7 @@
 import pytest
 from qiskit import QuantumCircuit
 
-from ariadne import simulate
+from ariadne import simulate, BackendType
 from ariadne.backends.cuda_backend import CUDABackend, is_cuda_available
 
 
@@ -123,7 +123,7 @@ class TestBackendIntegration:
         qc.measure_all()
         
         result = simulate(qc, shots=100)
-        assert result.backend_used == 'stim'
+        assert result.backend_used == BackendType.STIM
     
     def test_backend_selection_general(self):
         """Test general circuits select appropriate backend."""
@@ -134,7 +134,7 @@ class TestBackendIntegration:
         qc.measure_all()
         
         result = simulate(qc, shots=100)
-        assert result.backend_used in ['qiskit', 'cuda']
+        assert result.backend_used in [BackendType.QISKIT, BackendType.CUDA, BackendType.TENSOR_NETWORK, BackendType.JAX_METAL]
     
     def test_forced_backend_override(self):
         """Test forcing specific backend works."""
@@ -145,7 +145,7 @@ class TestBackendIntegration:
         
         # This is a Clifford circuit, but force Qiskit
         result = simulate(qc, shots=100, backend='qiskit')
-        assert result.backend_used == 'qiskit'
+        assert result.backend_used == BackendType.QISKIT
     
     def test_invalid_backend_error(self):
         """Test error handling for invalid backend."""
