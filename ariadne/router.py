@@ -21,7 +21,6 @@ except ImportError:  # pragma: no cover - executed when dependencies missing
     def is_cuda_available() -> bool:  # type: ignore[override]
         return False
 
-
 class BackendType(Enum):
     """Available quantum simulation backends."""
 
@@ -104,8 +103,8 @@ class QuantumRouter:
                 apple_silicon_boost=1.0,
             ),
             BackendType.CUDA: BackendCapacity(
-                clifford_capacity=7.0 if self._cuda_available else 0.0,
-                general_capacity=7.0 if self._cuda_available else 0.0,
+                clifford_capacity=8.0 if self._cuda_available else 0.0,
+                general_capacity=8.0 if self._cuda_available else 0.0,
                 memory_efficiency=0.8,
                 apple_silicon_boost=1.0,
             ),

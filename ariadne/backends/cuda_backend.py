@@ -202,74 +202,22 @@ class CUDABackend:
         if not qubits:
             return
 
-        if len(qubits) == 1:
-            self._apply_single_qubit_gate(state, matrix, qubits[0])
-        elif len(qubits) == 2:
-            self._apply_two_qubit_gate(state, matrix, qubits[0], qubits[1])
-        else:
-            self._apply_dense_gate(state, matrix, qubits)
-
-    def _apply_single_qubit_gate(self, state: Any, matrix: Any, qubit: int) -> None:
-        stride = 1 << qubit
-        period = stride << 1
-        for start in range(0, state.shape[0], period):
-            for offset in range(stride):
-                i0 = start + offset
-                i1 = i0 + stride
-                amp0 = state[i0]
-                amp1 = state[i1]
-                state[i0] = matrix[0, 0] * amp0 + matrix[0, 1] * amp1
-                state[i1] = matrix[1, 0] * amp0 + matrix[1, 1] * amp1
-
-    def _apply_two_qubit_gate(self, state: Any, matrix: Any, q0: int, q1: int) -> None:
-        xp = self._xp
-        if q0 == q1:
-            raise ValueError("Two-qubit gate requires two distinct qubits")
-
-        if q0 > q1:
-            matrix = self._swap_two_qubit_matrix(matrix)
-            q0, q1 = q1, q0
-
-        low_bit = 1 << q0
-        high_bit = 1 << q1
-        period = high_bit << 1
-        mid_stride = low_bit << 1
-
-        for base in range(0, state.shape[0], period):
-            for offset in range(0, high_bit, mid_stride):
-                for inner in range(low_bit):
-                    i00 = base + offset + inner
-                    i01 = i00 + low_bit
-                    i10 = i00 + high_bit
-                    i11 = i10 + low_bit
-                    vec = xp.array([state[i00], state[i01], state[i10], state[i11]])
-                    transformed = matrix @ vec
-                    state[i00], state[i01], state[i10], state[i11] = transformed
-
-    def _swap_two_qubit_matrix(self, matrix: Any) -> Any:
-        xp = self._xp
-        perm = xp.array([0, 2, 1, 3])
-        swapped = matrix.take(perm, axis=0).take(perm, axis=1)
-        return swapped
-
-    def _apply_dense_gate(self, state: Any, matrix: Any, qubits: Sequence[int]) -> None:
         xp = self._xp
         num_qubits = int(math.log2(state.shape[0]))
-        gate_qubits = list(qubits)
-        remaining = [index for index in range(num_qubits) if index not in gate_qubits]
-        permutation = gate_qubits + remaining
-        inverse_perm = _inverse_permutation(permutation)
+        k = len(qubits)
 
-        tensor = state.reshape([2] * num_qubits)
-        tensor = xp.transpose(tensor, permutation)
-        tensor = tensor.reshape(2 ** len(gate_qubits), -1)
+        axes = list(qubits)
+        tensor = xp.reshape(state, [2] * num_qubits, order="F")
+        tensor = xp.moveaxis(tensor, axes, range(k))
+        tensor = tensor.reshape(2**k, -1, order="F")
 
-        matrix = matrix.reshape(2 ** len(gate_qubits), 2 ** len(gate_qubits))
+        matrix = matrix.reshape(2**k, 2**k)
         updated = matrix @ tensor
 
-        updated = updated.reshape([2] * num_qubits)
-        updated = xp.transpose(updated, inverse_perm)
-        state[:] = updated.reshape(state.shape[0])
+        updated = updated.reshape([2] * k + [-1], order="F")
+        updated = xp.moveaxis(updated.reshape([2] * num_qubits, order="F"), range(k), axes)
+        state[:] = xp.reshape(updated, state.shape[0], order="F")
+
     def _sample_measurements(
         self, state: Any, measured_qubits: Sequence[int], shots: int
     ) -> Dict[str, int]:
@@ -281,7 +229,11 @@ class CUDABackend:
             probabilities = xp.abs(state) ** 2
             probabilities = cp.asnumpy(probabilities)  # type: ignore[arg-type]
 
-        probabilities = probabilities / probabilities.sum()
+        total = probabilities.sum()
+        if not np.isfinite(total) or total == 0:
+            raise RuntimeError("Statevector is not normalised")
+        probabilities = probabilities / total
+
         outcomes = np.random.choice(len(probabilities), size=shots, p=probabilities)
 
         counts: Dict[str, int] = {}
@@ -292,13 +244,6 @@ class CUDABackend:
             counts[bit_string] = counts.get(bit_string, 0) + 1
 
         return counts
-
-
-def _inverse_permutation(values: Sequence[int]) -> List[int]:
-    inverse = [0] * len(values)
-    for index, value in enumerate(values):
-        inverse[value] = index
-    return inverse
 
 
 def _format_bits(state_index: int, qubits: Sequence[int]) -> str:

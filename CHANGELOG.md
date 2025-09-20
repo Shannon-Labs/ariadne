@@ -12,3 +12,5 @@ All notable changes to Ariadne will be documented here.
   when no GPU support is present.
 - Refresh the CUDA tests so that they exercise the fallback path and only access
   the GPU when it is explicitly available.
+- Add minimal testing and verification utilities (CUDA backend tests, ZNE shim,
+  ZX cancellation helper).

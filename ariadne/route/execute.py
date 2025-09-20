@@ -1,14 +1,15 @@
-﻿"""Heuristics for choosing a backend without executing the circuit."""
+"""Legacy routing helpers retained for compatibility with older tests."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from time import perf_counter
 from typing import Dict, Literal
 
 from qiskit import QuantumCircuit
 
 from .analyze import analyze_circuit
+from ..router import QuantumRouter
 
 Backend = Literal["stim", "tn", "sv", "dd"]
 
@@ -19,15 +20,28 @@ def decide_backend(circuit: QuantumCircuit) -> Backend:
     if metrics.get("is_clifford", False):
         return "stim"
 
-    if metrics.get("treewidth_estimate", 0) <= 10 and metrics.get("depth", 0) >= 4:
+    treewidth = metrics.get("treewidth_estimate", 0)
+    num_qubits = metrics.get("num_qubits", 0)
+    depth = metrics.get("depth", 0)
+    two_qubit_depth = metrics.get("two_qubit_depth", 0)
+    edges = metrics.get("edges", 0)
+
+    if treewidth <= 10 and edges <= num_qubits * 2:
         return "tn"
 
-    if metrics.get("num_qubits", 0) <= 20 or (
-        metrics.get("two_qubit_depth", 0) >= max(1, metrics.get("depth", 1) // 2)
-    ):
+    if num_qubits <= 20 or two_qubit_depth >= max(1, depth // 2):
         return "sv"
 
     return "dd"
+
+
+def _simulate_with_router(circuit: QuantumCircuit, shots: int) -> Dict[str, object]:
+    router = QuantumRouter()
+    result = router.simulate(circuit, shots=shots)
+    return {
+        "counts": result.counts,
+        "backend": result.backend_used.value,
+    }
 
 
 @dataclass
@@ -42,29 +56,21 @@ def execute(circuit: QuantumCircuit, shots: int = 1024) -> Dict[str, object]:  #
     metrics = analyze_circuit(circuit)
 
     start = perf_counter()
-    if backend == "stim":
-        payload: Dict[str, object] = {"note": "Stim selected", "counts": None}
-    elif backend == "tn":
-        payload = {"note": "Tensor-network backend selected", "counts": None}
-    elif backend == "sv":
+    
+    # Use router for actual simulation
+    if backend == "stim" and metrics.get("is_clifford", False):
+        result = _simulate_with_router(circuit, shots)
+        payload = result
+    else:
+        # Fallback to qiskit or other backends
         try:
             from qiskit.quantum_info import Statevector
-
             statevector = Statevector.from_instruction(circuit)
             payload = {"statevector": statevector.data}
-        except Exception as exc:  # pragma: no cover - depends on qiskit features
-            payload = {"error": str(exc)}
-    else:  # dd
-        try:
-            import mqt.ddsim as ddsim
-
-            simulator = ddsim.DDSIMProvider().get_backend("qasm_simulator")
-            job = simulator.run(circuit, shots=shots)
-            payload = {"counts": job.result().get_counts()}
-        except Exception as exc:  # pragma: no cover - optional dependency
+        except Exception as exc:
             payload = {"error": str(exc)}
 
-    elapsed = perf_counter() - start
+    wall_time = perf_counter() - start
 
-    trace = Trace(backend=backend, wall_time_s=elapsed, metrics=metrics)
-    return {"result": payload, "trace": asdict(trace)}
+    trace = Trace(backend=backend, wall_time_s=wall_time, metrics=metrics)
+    return {"trace": asdict(trace), **payload}
