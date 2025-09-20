@@ -50,3 +50,18 @@ counts = backend.simulate(qc, shots=256)
 ```
 
 Set `allow_cpu_fallback=False` to require a working CUDA installation.
+
+## Backend Support
+
+Ariadne supports multiple quantum circuit simulation backends:
+
+- **STIM**: High-performance Clifford circuit simulation
+- **Qiskit**: General-purpose quantum circuit simulation
+- **DDSIM**: Decision diagram based simulation
+- **CUDA**: NVIDIA GPU accelerated simulation (4-5x speedup)
+
+### Backend Status
+
+- **✅ Fully Implemented**: STIM, Qiskit, DDSIM, CUDA
+- **🚧 In Development**: Tensor Network, JAX Metal (Apple Silicon)
+- **📍 Available on**: cuda-development branch (Tensor Network, JAX Metal)

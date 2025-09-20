@@ -269,10 +269,20 @@ class QuantumRouter:
         return {str(key): value for key, value in counts.items()}
 
     def _simulate_tensor_network(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
-        return self._simulate_qiskit(circuit, shots)
+        """Tensor network simulation - NOT YET IMPLEMENTED."""
+        raise NotImplementedError(
+            "Tensor network backend is not yet implemented. "
+            "This is a placeholder for future development. "
+            "Please use Qiskit, STIM, or CUDA backends instead."
+        )
 
     def _simulate_jax_metal(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
-        return self._simulate_qiskit(circuit, shots)
+        """JAX Metal simulation for Apple Silicon - NOT YET IMPLEMENTED."""
+        raise NotImplementedError(
+            "JAX Metal backend is not yet implemented. "
+            "This is a placeholder for Apple Silicon optimization. "
+            "Please use available backends or check the metal-development branch."
+        )
 
     def _simulate_ddsim(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
         try:

@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "Ariadne: Quantum Computing on Your Laptop - OpenQASM 3 quantum circuit simulator with intelligent backend routing"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 authors = [
   { name = "Shannon Labs" }
 ]
@@ -14,7 +14,7 @@ classifiers = [
   "Intended Audience :: Developers",
   "Intended Audience :: Education",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -101,6 +101,7 @@ markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')",
   "integration: marks tests as integration tests",
   "unit: marks tests as unit tests",
+  "benchmark: marks tests as benchmark tests",
 ]
 
 [tool.coverage.run]
@@ -129,7 +130,7 @@ build-backend = "setuptools.build_meta"
 include-package-data = true
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 include = ["ariadne*"]
 exclude = ["tests*", "docs*"]
 
