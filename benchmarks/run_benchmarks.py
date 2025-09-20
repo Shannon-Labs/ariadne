@@ -130,7 +130,8 @@ def run_all_benchmarks() -> Dict[str, Any]:
         speedup = float("nan")
     print(f"  ⚡ SPEEDUP: {speedup:.1f}x")
 
-    analysis = router.analyze_circuit(clifford_circuit)
+    from ariadne.route.analyze import analyze_circuit
+    analysis = analyze_circuit(clifford_circuit)
     results["benchmarks"].append(
         {
             "test": "Clifford Circuit",
@@ -167,7 +168,7 @@ def run_all_benchmarks() -> Dict[str, Any]:
     print(f"  Ariadne time: {ariadne_mixed['time_seconds']:.3f}s")
     print(f"  Performance: {mixed_factor:.1f}x")
 
-    analysis_mixed = router.analyze_circuit(mixed_circuit)
+    analysis_mixed = analyze_circuit(mixed_circuit)
     results["benchmarks"].append(
         {
             "test": "Mixed Circuit",
