@@ -1,0 +1,72 @@
+{
+  "gpu_info": {
+    "available": true,
+    "device_count": 1,
+    "devices": [
+      {
+        "device_id": 0,
+        "name": "NVIDIA GeForce RTX 3080",
+        "total_memory": 10736893952,
+        "multiprocessors": 68,
+        "compute_capability": "8.6"
+      }
+    ]
+  },
+  "shots": 1000,
+  "benchmarks": [
+    {
+      "circuit": "small_clifford",
+      "qubits": 6,
+      "depth_factor": 1,
+      "gate_count": 8,
+      "cuda_ms": 3.95,
+      "cpu_ms": 2.55,
+      "speedup": 0.65
+    },
+    {
+      "circuit": "medium_clifford",
+      "qubits": 10,
+      "depth_factor": 1,
+      "gate_count": 14,
+      "cuda_ms": 6.35,
+      "cpu_ms": 4.41,
+      "speedup": 0.69
+    },
+    {
+      "circuit": "small_general",
+      "qubits": 8,
+      "depth_factor": 2,
+      "gate_count": 24,
+      "cuda_ms": 9.27,
+      "cpu_ms": 3.74,
+      "speedup": 0.4
+    },
+    {
+      "circuit": "medium_general",
+      "qubits": 12,
+      "depth_factor": 2,
+      "gate_count": 36,
+      "cuda_ms": 13.93,
+      "cpu_ms": 8.12,
+      "speedup": 0.58
+    },
+    {
+      "circuit": "large_clifford",
+      "qubits": 16,
+      "depth_factor": 1,
+      "gate_count": 23,
+      "cuda_ms": 10.8,
+      "cpu_ms": 33.5,
+      "speedup": 3.1
+    },
+    {
+      "circuit": "deep_quantum",
+      "qubits": 10,
+      "depth_factor": 4,
+      "gate_count": 41,
+      "cuda_ms": 14.1,
+      "cpu_ms": 5.39,
+      "speedup": 0.38
+    }
+  ]
+}
