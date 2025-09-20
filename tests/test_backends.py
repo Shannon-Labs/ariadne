@@ -3,7 +3,7 @@
 import pytest
 from qiskit import QuantumCircuit
 
-from ariadne import simulate, BackendType
+from ariadne import BackendType, simulate
 from ariadne.backends.cuda_backend import CUDABackend, is_cuda_available
 
 
@@ -177,7 +177,7 @@ class TestBackendConsistency:
             results[backend] = result.counts
         
         # All should give '101'
-        for backend, counts in results.items():
+        for _backend, counts in results.items():
             assert counts == {'101': 100}
     
     def test_bell_state_consistency(self):

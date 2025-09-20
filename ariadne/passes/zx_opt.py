@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable, Tuple
+from collections.abc import Iterable
 
 from qiskit import QuantumCircuit
 from qiskit.circuit import Instruction
@@ -10,7 +10,7 @@ from qiskit.circuit import Instruction
 _CANCEL_PAIRS = {"h", "x", "y", "z", "cx", "cy", "cz", "swap"}
 
 
-def _instruction_signature(instruction: Instruction, qubits: Iterable) -> Tuple[str, Tuple[object, ...]]:
+def _instruction_signature(instruction: Instruction, qubits: Iterable) -> tuple[str, tuple[object, ...]]:
     return instruction.name, tuple(qubits)
 
 

@@ -6,12 +6,12 @@ import math
 from dataclasses import dataclass
 from enum import Enum
 from time import perf_counter
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any
 
 import numpy as np
 from qiskit import QuantumCircuit
 
-from .route.analyze import analyze_circuit, is_clifford_circuit
+from .route.analyze import analyze_circuit
 
 try:  # pragma: no cover - import guard for optional CUDA support
     from .backends.cuda_backend import CUDABackend, is_cuda_available
@@ -59,18 +59,18 @@ class RoutingDecision:
     confidence_score: float
     expected_speedup: float
     channel_capacity_match: float
-    alternatives: List[Tuple[BackendType, float]]
+    alternatives: list[tuple[BackendType, float]]
 
 
 @dataclass
 class SimulationResult:
     """Container for the output of :func:`simulate`."""
 
-    counts: Dict[str, int]
+    counts: dict[str, int]
     backend_used: BackendType
     execution_time: float
     routing_decision: RoutingDecision
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class QuantumRouter:
@@ -80,7 +80,7 @@ class QuantumRouter:
         self._cuda_available = is_cuda_available()
         self._metal_available = is_metal_available()
 
-        self.backend_capacities: Dict[BackendType, BackendCapacity] = {
+        self.backend_capacities: dict[BackendType, BackendCapacity] = {
             BackendType.STIM: BackendCapacity(
                 clifford_capacity=float("inf"),
                 general_capacity=0.0,
@@ -125,7 +125,7 @@ class QuantumRouter:
     def circuit_entropy(self, circuit: QuantumCircuit) -> float:
         """Return a Shannon-style entropy estimate for the circuit."""
 
-        gate_counts: Dict[str, int] = {}
+        gate_counts: dict[str, int] = {}
         total_gates = 0
 
         for instruction, _, _ in circuit.data:
@@ -180,7 +180,7 @@ class QuantumRouter:
 
         entropy = self.circuit_entropy(circuit)
 
-        backend_scores: Dict[BackendType, float] = {}
+        backend_scores: dict[BackendType, float] = {}
         for backend in BackendType:
             backend_scores[backend] = self.channel_capacity_match(circuit, backend)
 
@@ -258,7 +258,7 @@ class QuantumRouter:
             metadata={"shots": shots},
         )
 
-    def _simulate_stim(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
+    def _simulate_stim(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         try:
             from .converters import convert_qiskit_to_stim, simulate_stim_circuit
         except ImportError as exc:
@@ -268,7 +268,7 @@ class QuantumRouter:
         num_clbits = circuit.num_clbits or circuit.num_qubits
         return simulate_stim_circuit(stim_circuit, measurement_map, shots, num_clbits)
 
-    def _simulate_qiskit(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
+    def _simulate_qiskit(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         try:
             from qiskit.providers.basic_provider import BasicProvider
         except ImportError as exc:  # pragma: no cover - depends on qiskit extras
@@ -280,7 +280,7 @@ class QuantumRouter:
         counts = job.result().get_counts()
         return {str(key): value for key, value in counts.items()}
 
-    def _simulate_tensor_network(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
+    def _simulate_tensor_network(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         num_qubits = circuit.num_qubits
         if num_qubits <= 4:
             return self._simulate_qiskit(circuit, shots)
@@ -289,14 +289,14 @@ class QuantumRouter:
         base_count = shots // total_states
         remainder = shots % total_states
 
-        counts: Dict[str, int] = {}
+        counts: dict[str, int] = {}
         for index in range(total_states):
             state = format(index, f"0{num_qubits}b")
             counts[state] = base_count + (1 if index < remainder else 0)
 
         return counts
 
-    def _simulate_jax_metal(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
+    def _simulate_jax_metal(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         import platform
 
         if platform.system() != "Darwin" or platform.machine() != "arm64":
@@ -304,7 +304,6 @@ class QuantumRouter:
 
         try:
             import jax.numpy as jnp
-            from jax import random
         except ImportError as exc:  # pragma: no cover - optional dependency
             raise RuntimeError("JAX is not installed") from exc
 
@@ -312,20 +311,19 @@ class QuantumRouter:
         if num_qubits > 6:
             return self._simulate_qiskit(circuit, shots)
 
-        key = random.PRNGKey(42)
         amplitudes = jnp.ones(2**num_qubits, dtype=jnp.complex128)
         amplitudes = amplitudes / jnp.sqrt(amplitudes.size)
         probabilities = jnp.abs(amplitudes) ** 2
         probabilities = np.asarray(probabilities)
 
         outcomes = np.random.choice(len(probabilities), size=shots, p=probabilities)
-        counts: Dict[str, int] = {}
+        counts: dict[str, int] = {}
         for outcome in outcomes:
             state = format(outcome, f"0{num_qubits}b")
             counts[state] = counts.get(state, 0) + 1
         return counts
 
-    def _simulate_ddsim(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
+    def _simulate_ddsim(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         try:
             import mqt.ddsim as ddsim
         except ImportError as exc:  # pragma: no cover - optional dependency
@@ -336,14 +334,14 @@ class QuantumRouter:
         counts = job.result().get_counts()
         return {str(key): value for key, value in counts.items()}
 
-    def _simulate_cuda(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
+    def _simulate_cuda(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         if not self._cuda_available or CUDABackend is None:
             raise RuntimeError("CUDA runtime not available")
 
         backend = CUDABackend()
         return backend.simulate(circuit, shots)
 
-    def _simulate_jax_metal(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
+    def _simulate_metal(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         if not self._metal_available or MetalBackend is None:
             raise RuntimeError("JAX with Metal support not available")
 
@@ -359,7 +357,7 @@ class QuantumRouter:
         return 1.0
 
 
-def simulate(circuit: QuantumCircuit, shots: int = 1024, backend: Optional[str] = None) -> SimulationResult:
+def simulate(circuit: QuantumCircuit, shots: int = 1024, backend: str | None = None) -> SimulationResult:
     """Convenience wrapper that routes and executes ``circuit``."""
 
     router = QuantumRouter()
@@ -368,8 +366,8 @@ def simulate(circuit: QuantumCircuit, shots: int = 1024, backend: Optional[str] 
         # Force specific backend
         try:
             backend_type = BackendType(backend)
-        except ValueError:
-            raise ValueError(f"Unknown backend: {backend}")
+        except ValueError as exc:
+            raise ValueError(f"Unknown backend: {backend}") from exc
         
         # Create a custom router that only uses the specified backend
         class ForcedRouter(QuantumRouter):

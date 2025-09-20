@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import math
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any
 
 import numpy as np
 from qiskit import QuantumCircuit
@@ -44,7 +45,7 @@ def is_metal_available() -> bool:
         return False
 
 
-def get_metal_info() -> Dict[str, object]:
+def get_metal_info() -> dict[str, object]:
     """Return a lightweight description of the detected Metal device."""
     
     if not JAX_AVAILABLE:
@@ -105,7 +106,7 @@ class MetalBackend:
         prefer_gpu: bool = True,
         allow_cpu_fallback: bool = True,
     ) -> None:
-        self._last_summary: Optional[SimulationSummary] = None
+        self._last_summary: SimulationSummary | None = None
         self._device = None
         self._mode = "cpu"
 
@@ -125,7 +126,7 @@ class MetalBackend:
                     self._mode = "cpu"
             except Exception as exc:
                 if not allow_cpu_fallback:
-                    raise RuntimeError(f"Unable to select Metal device {device_id}: {exc}")
+                    raise RuntimeError(f"Unable to select Metal device {device_id}: {exc}") from exc
                 else:
                     # Fall back to CPU on error
                     self._device = None
@@ -141,10 +142,10 @@ class MetalBackend:
         return self._mode
 
     @property
-    def last_summary(self) -> Optional[SimulationSummary]:
+    def last_summary(self) -> SimulationSummary | None:
         return self._last_summary
 
-    def simulate(self, circuit: QuantumCircuit, shots: int = 1024) -> Dict[str, int]:
+    def simulate(self, circuit: QuantumCircuit, shots: int = 1024) -> dict[str, int]:
         if shots <= 0:
             raise ValueError("shots must be a positive integer")
 
@@ -160,7 +161,7 @@ class MetalBackend:
 
         return counts
 
-    def simulate_statevector(self, circuit: QuantumCircuit) -> Tuple[np.ndarray, Sequence[int]]:
+    def simulate_statevector(self, circuit: QuantumCircuit) -> tuple[np.ndarray, Sequence[int]]:
         state, measured_qubits, _ = self._simulate_statevector(circuit)
         if self._device is None:
             return state, measured_qubits
@@ -172,9 +173,7 @@ class MetalBackend:
 
     def _simulate_statevector(
         self, circuit: QuantumCircuit
-    ) -> Tuple[Any, Sequence[int], float]:
-        num_qubits = circuit.num_qubits
-        
+    ) -> tuple[Any, Sequence[int], float]:
         # For Metal compatibility, we'll use a simpler approach
         # that works around the complex number limitations
         if self._device is not None and self._mode == "metal":
@@ -186,7 +185,7 @@ class MetalBackend:
     
     def _simulate_statevector_cpu(
         self, circuit: QuantumCircuit
-    ) -> Tuple[Any, Sequence[int], float]:
+    ) -> tuple[Any, Sequence[int], float]:
         """CPU-based statevector simulation using NumPy (JAX fallback)."""
         num_qubits = circuit.num_qubits
         state = np.zeros(2**num_qubits, dtype=np.complex128)
@@ -204,9 +203,9 @@ class MetalBackend:
 
     def _prepare_operations(
         self, circuit: QuantumCircuit
-    ) -> Tuple[List[Tuple[Instruction, List[int]]], Sequence[int]]:
-        operations: List[Tuple[Instruction, List[int]]] = []
-        measurement_map: List[Tuple[int, int]] = []
+    ) -> tuple[list[tuple[Instruction, list[int]]], Sequence[int]]:
+        operations: list[tuple[Instruction, list[int]]] = []
+        measurement_map: list[tuple[int, int]] = []
 
         for item in circuit.data:
             if hasattr(item, "operation"):
@@ -297,7 +296,7 @@ class MetalBackend:
 
     def _sample_measurements(
         self, state: Any, measured_qubits: Sequence[int], shots: int
-    ) -> Dict[str, int]:
+    ) -> dict[str, int]:
         # Handle both JAX and NumPy arrays
         if hasattr(state, 'shape') and hasattr(state, '__array__'):
             if hasattr(state, 'device'):  # JAX array
@@ -314,7 +313,7 @@ class MetalBackend:
 
         outcomes = np.random.choice(len(probabilities), size=shots, p=probabilities)
 
-        counts: Dict[str, int] = {}
+        counts: dict[str, int] = {}
         measured = list(measured_qubits) or list(range(int(math.log2(len(probabilities)))))
 
         for outcome in outcomes:
@@ -334,6 +333,6 @@ def simulate_metal(
     *,
     shots: int = 1024,
     allow_cpu_fallback: bool = True,
-) -> Dict[str, int]:
+) -> dict[str, int]:
     backend = MetalBackend(allow_cpu_fallback=allow_cpu_fallback)
     return backend.simulate(circuit, shots=shots)

@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
-from typing import Dict
-
 import networkx as nx
 from qiskit import QuantumCircuit
-
 
 CLIFFORD_ONE_Q = {"i", "x", "y", "z", "h", "s", "sdg", "sx", "sxdg"}
 CLIFFORD_TWO_Q = {"cx", "cz", "swap"}
@@ -82,7 +78,7 @@ def two_qubit_depth(circ: QuantumCircuit) -> int:
     return depth + (1 if current_layer_qubits else 0)
 
 
-def analyze_circuit(circ: QuantumCircuit) -> Dict[str, float | int | bool]:
+def analyze_circuit(circ: QuantumCircuit) -> dict[str, float | int | bool]:
     g = interaction_graph(circ)
     return {
         "num_qubits": circ.num_qubits,
