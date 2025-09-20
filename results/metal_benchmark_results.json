@@ -1,0 +1,82 @@
+[
+  {
+    "circuit": "circuit-166",
+    "backend": "qiskit_cpu",
+    "shots": 500,
+    "execution_time": 0.00040018320069066247,
+    "success": true,
+    "error": null
+  },
+  {
+    "circuit": "circuit-166",
+    "backend": "metal",
+    "shots": 500,
+    "execution_time": 0.0002227749995654449,
+    "success": true,
+    "error": null
+  },
+  {
+    "circuit": "circuit-167",
+    "backend": "qiskit_cpu",
+    "shots": 500,
+    "execution_time": 0.0006320750006125308,
+    "success": true,
+    "error": null
+  },
+  {
+    "circuit": "circuit-167",
+    "backend": "metal",
+    "shots": 500,
+    "execution_time": 0.000341191600455204,
+    "success": true,
+    "error": null
+  },
+  {
+    "circuit": "circuit-168",
+    "backend": "qiskit_cpu",
+    "shots": 500,
+    "execution_time": 0.0004407333988638129,
+    "success": true,
+    "error": null
+  },
+  {
+    "circuit": "circuit-168",
+    "backend": "metal",
+    "shots": 500,
+    "execution_time": 0.00024155799983418546,
+    "success": true,
+    "error": null
+  },
+  {
+    "circuit": "circuit-169",
+    "backend": "qiskit_cpu",
+    "shots": 500,
+    "execution_time": 0.0005817247998493258,
+    "success": true,
+    "error": null
+  },
+  {
+    "circuit": "circuit-169",
+    "backend": "metal",
+    "shots": 500,
+    "execution_time": 0.0004168416009633802,
+    "success": true,
+    "error": null
+  },
+  {
+    "circuit": "circuit-170",
+    "backend": "qiskit_cpu",
+    "shots": 500,
+    "execution_time": 0.0008848332014167682,
+    "success": true,
+    "error": null
+  },
+  {
+    "circuit": "circuit-170",
+    "backend": "metal",
+    "shots": 500,
+    "execution_time": 0.0004938922000292223,
+    "success": true,
+    "error": null
+  }
+]

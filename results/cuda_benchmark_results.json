@@ -1,0 +1,44 @@
+[
+  {
+    "circuit": "bell_ladder_12",
+    "backend": "qiskit-basic",
+    "shots": 500,
+    "repetitions": 3,
+    "timings": [
+      0.002114832997904159,
+      0.001964374998351559,
+      0.0019631249997473788
+    ],
+    "mean_time": 0.002014110998667699,
+    "min_time": 0.0019631249997473788,
+    "max_time": 0.002114832997904159
+  },
+  {
+    "circuit": "clifford_chain_20",
+    "backend": "qiskit-basic",
+    "shots": 500,
+    "repetitions": 3,
+    "timings": [
+      4.152650416999677,
+      4.205178874999547,
+      4.153062042001693
+    ],
+    "mean_time": 4.170297111333639,
+    "min_time": 4.152650416999677,
+    "max_time": 4.205178874999547
+  },
+  {
+    "circuit": "general_mixed_16",
+    "backend": "qiskit-basic",
+    "shots": 500,
+    "repetitions": 3,
+    "timings": [
+      0.13459404200330027,
+      0.1323093749997497,
+      0.1354593340001884
+    ],
+    "mean_time": 0.13412091700107945,
+    "min_time": 0.1323093749997497,
+    "max_time": 0.1354593340001884
+  }
+]
