@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+from typing import TYPE_CHECKING
+
 from qiskit import QuantumCircuit
 
+if TYPE_CHECKING:
+    import stim
 
 # Mapping from Qiskit gate names to Stim gate names
 STIM_GATE_MAP = {
@@ -25,7 +28,7 @@ STIM_GATE_MAP = {
 }
 
 
-def convert_qiskit_to_stim(qc: QuantumCircuit) -> 'stim.Circuit':
+def convert_qiskit_to_stim(qc: QuantumCircuit) -> tuple[stim.Circuit, list[tuple[int, int]]]:
     """Convert Qiskit circuit to Stim circuit.
     
     CRITICAL: Uses explicit qubit/clbit index maps for Qiskit 2.x compatibility
@@ -39,7 +42,7 @@ def convert_qiskit_to_stim(qc: QuantumCircuit) -> 'stim.Circuit':
     clbit_map = {clbit: idx for idx, clbit in enumerate(qc.clbits)}
     
     # Track measurement mapping for proper bit ordering
-    measurement_map: List[Tuple[int, int]] = []  # (measurement_index, clbit_index)
+    measurement_map: list[tuple[int, int]] = []  # (measurement_index, clbit_index)
     measurement_counter = 0
     
     for inst, qargs, cargs in qc.data:
@@ -49,7 +52,7 @@ def convert_qiskit_to_stim(qc: QuantumCircuit) -> 'stim.Circuit':
         if gate_name == "measure":
             if not cargs:
                 continue
-            for qubit, clbit in zip(qargs, cargs):
+            for qubit, clbit in zip(qargs, cargs, strict=False):
                 stim_circuit.append("M", [qubit_map[qubit]])
                 if clbit in clbit_map:
                     measurement_map.append((measurement_counter, clbit_map[clbit]))
@@ -69,13 +72,13 @@ def convert_qiskit_to_stim(qc: QuantumCircuit) -> 'stim.Circuit':
     return stim_circuit, measurement_map
 
 
-def simulate_stim_circuit(stim_circuit: 'stim.Circuit', measurement_map: List[Tuple[int, int]], 
-                         shots: int, num_clbits: int) -> Dict[str, int]:
+def simulate_stim_circuit(stim_circuit: stim.Circuit, measurement_map: list[tuple[int, int]], 
+                         shots: int, num_clbits: int) -> dict[str, int]:
     """Simulate Stim circuit and convert results to Qiskit format."""
     sampler = stim_circuit.compile_sampler()
     samples = sampler.sample(shots)
     
-    counts: Dict[str, int] = {}
+    counts: dict[str, int] = {}
     for sample in samples:
         bits = ["0"] * num_clbits
         for meas_index, clbit_index in measurement_map:

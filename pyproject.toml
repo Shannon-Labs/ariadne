@@ -1,16 +1,16 @@
 [project]
 name = "ariadne-quantum"
 version = "1.0.0"
-description = "Ariadne: Quantum Computing on Your Laptop - OpenQASM 3 quantum circuit simulator with intelligent backend routing"
+description = "Ariadne: The Intelligent Quantum Router - Google Maps for Quantum Circuits with Apple Silicon & CUDA acceleration"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 authors = [
   { name = "Shannon Labs" }
 ]
-keywords = ["quantum", "simulator", "qasm3", "quantum-computing", "education", "research"]
+keywords = ["quantum", "simulator", "qasm3", "quantum-computing", "apple-silicon", "cuda", "jax", "metal", "intelligent-routing", "bell-labs", "shannon-labs"]
 classifiers = [
-  "Development Status :: 5 - Production/Stable",
+  "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "Intended Audience :: Education",
   "Intended Audience :: Science/Research",
@@ -72,10 +72,12 @@ ariadne = "ariadne.router:simulate"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "N", "B", "C4", "UP"]
 ignore = ["E501", "B008"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/*" = ["B011"]
 "examples/*" = ["B006"]
 

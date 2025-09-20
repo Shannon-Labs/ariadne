@@ -192,3 +192,15 @@ Desktop.ini
 
 # Linux
 *~
+
+# Project specific temporary files
+tmp_*.py
+test_cuda_quick.py
+*_debug.py
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Duplicate directories
+ariadne-oss/

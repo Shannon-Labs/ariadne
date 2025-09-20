@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
-from typing import Dict
-
 import networkx as nx
 from qiskit import QuantumCircuit
-
 
 CLIFFORD_ONE_Q = {"i", "x", "y", "z", "h", "s", "sdg", "sx", "sxdg"}
 CLIFFORD_TWO_Q = {"cx", "cz", "swap"}
@@ -82,7 +78,7 @@ def two_qubit_depth(circ: QuantumCircuit) -> int:
     return depth + (1 if current_layer_qubits else 0)
 
 
-def analyze_circuit(circ: QuantumCircuit) -> Dict[str, float | int | bool]:
+def analyze_circuit(circ: QuantumCircuit) -> dict[str, float | int | bool]:
     g = interaction_graph(circ)
     return {
         "num_qubits": circ.num_qubits,
@@ -94,4 +90,23 @@ def analyze_circuit(circ: QuantumCircuit) -> Dict[str, float | int | bool]:
         "clifford_ratio": clifford_ratio(circ),
         "is_clifford": is_clifford_circuit(circ),
     }
+
+
+def should_use_tensor_network(
+    circuit: QuantumCircuit, analysis: dict[str, float | int | bool] | None = None
+) -> bool:
+    """Return ``True`` if the circuit should target a tensor network backend."""
+
+    metrics = analysis or analyze_circuit(circuit)
+
+    if metrics["is_clifford"]:
+        return False
+
+    num_qubits = int(metrics["num_qubits"])
+    if num_qubits <= 4:
+        return False
+    if num_qubits > 30:
+        return False
+
+    return True
 

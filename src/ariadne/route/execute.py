@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from time import perf_counter
-from typing import Dict, Literal
+from typing import Literal
 
 from qiskit import QuantumCircuit
 
-from .analyze import analyze_circuit
 from ..router import QuantumRouter
+from .analyze import analyze_circuit
 
 Backend = Literal["stim", "tn", "sv", "dd"]
 
@@ -35,7 +35,7 @@ def decide_backend(circuit: QuantumCircuit) -> Backend:
     return "dd"
 
 
-def _simulate_with_router(circuit: QuantumCircuit, shots: int) -> Dict[str, object]:
+def _simulate_with_router(circuit: QuantumCircuit, shots: int) -> dict[str, object]:
     router = QuantumRouter()
     result = router.simulate(circuit, shots=shots)
     return {
@@ -48,10 +48,10 @@ def _simulate_with_router(circuit: QuantumCircuit, shots: int) -> Dict[str, obje
 class Trace:
     backend: Backend
     wall_time_s: float
-    metrics: Dict[str, float | int | bool]
+    metrics: dict[str, float | int | bool]
 
 
-def execute(circuit: QuantumCircuit, shots: int = 1024) -> Dict[str, object]:  # pragma: no cover - integration helper
+def execute(circuit: QuantumCircuit, shots: int = 1024) -> dict[str, object]:  # pragma: no cover - integration helper
     backend = decide_backend(circuit)
     metrics = analyze_circuit(circuit)
 

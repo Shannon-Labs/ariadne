@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from ariadne.route.analyze import is_clifford_circuit, clifford_ratio
+from ariadne.route.analyze import clifford_ratio, is_clifford_circuit
 
 
 def test_clifford_ratio_for_clifford_only() -> None:

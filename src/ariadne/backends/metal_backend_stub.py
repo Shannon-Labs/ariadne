@@ -6,9 +6,9 @@ on the Mac development branch. The actual implementation will use
 JAX with Metal acceleration on Apple Silicon.
 """
 
-from typing import Dict, Optional, Tuple, Any
+from typing import Any
+
 from qiskit import QuantumCircuit
-import numpy as np
 
 
 class MetalBackend:
@@ -19,7 +19,7 @@ class MetalBackend:
     and tested on M4 Mac hardware.
     """
     
-    def __init__(self, device: Optional[str] = None):
+    def __init__(self, device: str | None = None):
         """
         Initialize Metal backend.
         
@@ -42,7 +42,7 @@ class MetalBackend:
                 "Use metal-development branch on Mac for implementation."
             )
     
-    def simulate(self, circuit: QuantumCircuit, shots: int = 1024) -> Dict[str, int]:
+    def simulate(self, circuit: QuantumCircuit, shots: int = 1024) -> dict[str, int]:
         """
         Simulate quantum circuit using JAX with Metal acceleration.
         
@@ -58,7 +58,7 @@ class MetalBackend:
             "Please use metal-development branch on Mac hardware."
         )
     
-    def get_device_info(self) -> Dict[str, Any]:
+    def get_device_info(self) -> dict[str, Any]:
         """Get information about Metal device."""
         return {
             "backend": "metal",

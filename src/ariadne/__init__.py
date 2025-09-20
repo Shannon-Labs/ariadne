@@ -2,6 +2,8 @@
 
 __version__ = "1.0.0"
 
+from .backends.cuda_backend import CUDABackend, get_cuda_info, simulate_cuda
+from .backends.metal_backend import MetalBackend, get_metal_info, simulate_metal
 from .router import (
     BackendCapacity,
     BackendType,
@@ -10,7 +12,6 @@ from .router import (
     SimulationResult,
     simulate,
 )
-from .backends.cuda_backend import CUDABackend, get_cuda_info, simulate_cuda
 
 __all__ = [
     "QuantumRouter",
@@ -22,4 +23,7 @@ __all__ = [
     "CUDABackend",
     "simulate_cuda",
     "get_cuda_info",
+    "MetalBackend",
+    "simulate_metal",
+    "get_metal_info",
 ]
