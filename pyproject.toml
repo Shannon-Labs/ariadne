@@ -1,14 +1,14 @@
 [project]
 name = "ariadne-quantum"
 version = "1.0.0"
-description = "Ariadne: Quantum Computing on Your Laptop - OpenQASM 3 quantum circuit simulator with intelligent backend routing"
+description = "Ariadne: The Intelligent Quantum Router - Google Maps for Quantum Circuits with Apple Silicon & CUDA acceleration"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [
   { name = "Shannon Labs" }
 ]
-keywords = ["quantum", "simulator", "qasm3", "quantum-computing", "education", "research"]
+keywords = ["quantum", "simulator", "qasm3", "quantum-computing", "apple-silicon", "cuda", "jax", "metal", "intelligent-routing", "bell-labs", "shannon-labs"]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
