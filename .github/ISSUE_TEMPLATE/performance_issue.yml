@@ -1,0 +1,114 @@
+name: 🚀 Performance Issue
+description: Report performance problems or suggest optimizations
+title: "[PERF] "
+labels: ["performance", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us make Ariadne faster! Please provide detailed performance measurements.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Performance Issue Description
+      description: What performance problem are you experiencing?
+      placeholder: |
+        Circuit routing takes 5 seconds for a 50-qubit circuit...
+    validations:
+      required: true
+
+  - type: textarea
+    id: benchmark
+    attributes:
+      label: Benchmark Code
+      description: Provide code to reproduce the performance issue
+      value: |
+        ```python
+        import time
+        from qiskit import QuantumCircuit
+        from ariadne import simulate
+        
+        # Your benchmark code here
+        start = time.time()
+        # ...
+        print(f"Time: {time.time() - start:.3f}s")
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: measurements
+    attributes:
+      label: Performance Measurements
+      description: Provide specific timing measurements
+      placeholder: |
+        - Circuit size: 50 qubits, 200 gates
+        - Routing time: 5.2 seconds
+        - Simulation time: 0.3 seconds
+        - Total time: 5.5 seconds
+        - Memory usage: 2.1 GB
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-performance
+    attributes:
+      label: Expected Performance
+      description: What performance do you expect?
+      placeholder: |
+        Based on circuit complexity, routing should take < 0.1 seconds
+    validations:
+      required: true
+
+  - type: input
+    id: hardware-specs
+    attributes:
+      label: Hardware Specifications
+      description: Your CPU, GPU, RAM details
+      placeholder: "RTX 3080 10GB, Intel i9-12900K, 32GB RAM"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend Used
+      description: Which backend was selected?
+      options:
+        - Stim
+        - Qiskit
+        - CUDA
+        - JAX/Metal
+        - Tensor Network
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: profile
+    attributes:
+      label: Profiling Data
+      description: If you have profiling data, please share it
+      placeholder: |
+        Output from cProfile, py-spy, or other profilers...
+
+  - type: textarea
+    id: suggestions
+    attributes:
+      label: Optimization Suggestions
+      description: Any ideas on how to improve performance?
+      placeholder: |
+        Could cache routing decisions for similar circuits...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have provided reproducible benchmark code
+          required: true
+        - label: I have included hardware specifications
+          required: true
+        - label: I have measured performance multiple times
+          required: false
