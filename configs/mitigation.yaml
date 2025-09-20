@@ -1,0 +1,11 @@
+rules:
+  - match: { depth_max: 16, two_qubit_density_max: 0.10 }
+    strategy: zne
+    params: { folds: [1, 3, 5], model: "richardson" }
+  - match: { near_clifford: true }
+    strategy: cdr
+    params: { training_circuits: 32, model: "linear" }
+  - match: { else: true }
+    strategy: none
+    params: {}
+seed: 1234
