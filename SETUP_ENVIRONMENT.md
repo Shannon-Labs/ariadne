@@ -48,6 +48,10 @@ print(simulate(qc, shots=64).backend_used)
 PY
 ```
 
+```powershell
+# Optional: run CUDA/CPU comparison benchmarks
+python benchmarks\cuda_vs_cpu.py --cpu --shots 512 --repetitions 2
+```
 To confirm that the CUDA backend is available:
 
 ```powershell

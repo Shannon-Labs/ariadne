@@ -1,15 +1,9 @@
 ﻿# Ariadne: Intelligent Quantum Circuit Routing
 
 Ariadne analyses a quantum circuit and chooses an execution backend that is a
-reasonable fit for the circuit structure.  It understands stabiliser-friendly
-circuits, dense universal circuits and a handful of hardware-specific options.
-
-The project is primarily a teaching and experimentation tool: it wraps a small
-set of existing simulators (Stim, Qiskit, tensor network sketches, MQT DDSIM,
-JAX/Metal on Apple Silicon) and provides a consistent API for routing and
-simulation.  A lightweight CUDA backend is included for environments where
-[CuPy](https://cupy.dev/) is available; it falls back to a NumPy implementation
-when no GPU is detected.
+reasonable fit for the circuit structure. It wraps a set of existing simulators
+(Stim, Qiskit, tensor-network sketches, MQT DDSIM, and an optional CUDA backend)
+and presents a consistent API for routing and simulation.
 
 ## Getting started
 
@@ -21,7 +15,7 @@ python -m pip install -e .[dev]
 Run the default test suite:
 
 ```bash
-pytest -q
+python -m pytest -q
 ```
 
 ## Quick example
@@ -53,14 +47,11 @@ print(decision.channel_capacity_match)
 
 ## Optional CUDA backend
 
-The CUDA backend is intentionally conservative: it provides a correct
-statevector simulator that can execute on the GPU when CuPy is installed, and it
-uses a well-tested NumPy implementation otherwise.  There are no baked-in
-performance guarantees—treat it as an optional accelerator for small and
-medium-sized circuits.
+The CUDA backend is a correctness-first statevector simulator. It executes on
+CuPy when an NVIDIA GPU is available and falls back to NumPy otherwise.
 
 ```bash
-python -m pip install cupy-cuda12x  # choose the wheel that matches your driver
+python -m pip install -e .[dev,cuda]
 ```
 
 ```python
@@ -70,18 +61,30 @@ backend = CUDABackend()
 counts = backend.simulate(bell, shots=256)
 ```
 
-When CUDA support is not available the same code falls back to the CPU.  Set
-``allow_cpu_fallback=False`` to require a working GPU environment.
+Disable the CPU fallback by passing ``allow_cpu_fallback=False`` if you want the
+backend to raise when CUDA is not present.
+
+## Benchmarks
+
+A lightweight benchmark harness is available in
+`benchmarks/cuda_vs_cpu.py`. Run it from the repository root:
+
+```bash
+python benchmarks/cuda_vs_cpu.py --cpu --shots 512 --repetitions 2
+```
+
+The script measures Ariadne's CUDA and CPU modes alongside Qiskit's
+`basic_simulator`, printing a timing table and optional JSON output (see
+`python benchmarks/cuda_vs_cpu.py --help`).
 
 ## Development tasks
 
-- `make lint` – run Ruff
-- `make format` – format source files with Ruff
-- `make typecheck` – MyPy (strict mode)
-- `make test` – execute the pytest suite
+- `make lint`
+- `make format`
+- `make typecheck`
+- `make test`
 
 ## Status
 
-Ariadne is a research project.  Expect the API to evolve; measurements produced
-by experiments should be validated independently before drawing performance
-conclusions.
+Ariadne is a research project. Expect the API to evolve; validate performance
+claims independently before relying on them.
