@@ -29,7 +29,7 @@ Ariadne automatically analyzes your circuit and routes it to the perfect simulat
 
 ✅ **Intelligent Quantum Router** - First simulator that AUTOMATICALLY chooses optimal backend  
 ✅ **Bell Labs-Style Information Theory** - Routes based on circuit entropy H(Q), not just size  
-✅ **1000x Performance Gains** - Stim for Clifford circuits, tensor networks for large circuits  
+✅ **Significant Performance Gains** - 1.5-2.1x with Metal, 2-6x with CUDA, theoretical 1000x+ with Stim for Clifford circuits  
 ✅ **Apple Silicon Optimized** - Native M1/M2/M3/M4 performance with JAX/Metal acceleration  
 ✅ **CUDA Ready** - GPU acceleration with CuPy integration  
 ✅ **Zero Configuration** - Works out of the box with `pip install`  
@@ -215,12 +215,14 @@ def route_circuit(circuit):
 
 ## 📊 Performance Benchmarks
 
+> **⚠️ Performance Disclaimer**: The 1000x+ claims for Clifford circuits are based on theoretical Stim performance (industry standard) and have not been measured by our benchmark suite. Our actual measurements show 1.5-2.1x speedup with Metal and 2-6x speedup with CUDA.
+
 ### Current Performance (v1.0.0)
-- **Clifford circuits**: 1000× faster than Qiskit (Stim backend)
+- **Apple Silicon**: 1.5-2.1× boost with JAX/Metal (measured)
+- **NVIDIA GPU**: 2-6× boost with CUDA (measured)
+- **Clifford circuits**: Theoretical 1000×+ with Stim (not measured by us)
 - **Mixed circuits**: Parity with Qiskit (1.01× ratio)
 - **Large circuits**: 10× faster (tensor networks)
-- **Apple Silicon**: 1.5-2.1× boost with JAX/Metal
-- **NVIDIA GPU**: 2-50× boost with CUDA
 
 ### Benchmark Suite
 ```bash
