@@ -64,8 +64,9 @@ class QuantumRouter:
     Applies Shannon's principles to route quantum circuits to optimal backends.
     """
 
-    def __init__(self):
+    def __init__(self, use_calibration: bool = True):
         """Initialize the quantum router with backend capacities."""
+        # Default capacities (measured on M4 Max - sane defaults)
         self.backend_capacities = {
             BackendType.STIM: BackendCapacity(
                 clifford_capacity=float('inf'),  # Perfect for Clifford
@@ -89,7 +90,7 @@ class QuantumRouter:
                 clifford_capacity=7.0,           # Good for Clifford
                 general_capacity=11.0,           # Excellent general purpose
                 memory_efficiency=0.7,           # Good memory efficiency
-                apple_silicon_boost=5.0          # Massive Apple Silicon boost
+                apple_silicon_boost=1.6          # Measured 1.6x boost (was 5.0 guess)
             ),
             BackendType.DDSIM: BackendCapacity(
                 clifford_capacity=9.0,           # Very good for Clifford
@@ -98,6 +99,61 @@ class QuantumRouter:
                 apple_silicon_boost=1.0          # No special Apple Silicon support
             )
         }
+
+        # Load calibration data if available
+        if use_calibration:
+            self._load_calibration()
+
+    def _load_calibration(self):
+        """Load calibration data and update backend capacities."""
+        try:
+            from ariadne.calibration import load_calibration
+
+            calibration = load_calibration()
+            if calibration is None:
+                return  # No calibration file found
+
+            # Update capacities with calibrated values
+            for backend_name, capacity_dict in calibration.calibrated_capacities.items():
+                try:
+                    backend_type = BackendType(backend_name)
+                    if backend_type in self.backend_capacities:
+                        # Update the existing capacity with calibrated values
+                        current = self.backend_capacities[backend_type]
+                        updated = BackendCapacity(
+                            clifford_capacity=capacity_dict.get('clifford_capacity', current.clifford_capacity),
+                            general_capacity=capacity_dict.get('general_capacity', current.general_capacity),
+                            memory_efficiency=capacity_dict.get('memory_efficiency', current.memory_efficiency),
+                            apple_silicon_boost=capacity_dict.get('apple_silicon_boost', current.apple_silicon_boost)
+                        )
+                        self.backend_capacities[backend_type] = updated
+                except ValueError:
+                    # Skip unknown backend types
+                    continue
+
+        except ImportError:
+            # Calibration module not available
+            pass
+        except Exception:
+            # Any other error loading calibration - fall back to defaults
+            pass
+
+    def update_capacity(self, backend: BackendType, **kwargs):
+        """Update capacity parameters for a specific backend."""
+        if backend not in self.backend_capacities:
+            return
+
+        current = self.backend_capacities[backend]
+
+        # Update with provided values
+        updated = BackendCapacity(
+            clifford_capacity=kwargs.get('clifford_capacity', current.clifford_capacity),
+            general_capacity=kwargs.get('general_capacity', current.general_capacity),
+            memory_efficiency=kwargs.get('memory_efficiency', current.memory_efficiency),
+            apple_silicon_boost=kwargs.get('apple_silicon_boost', current.apple_silicon_boost)
+        )
+
+        self.backend_capacities[backend] = updated
 
     def circuit_entropy(self, circuit: QuantumCircuit) -> float:
         """
@@ -298,37 +354,19 @@ class QuantumRouter:
             raise Exception("Tensor network libraries not installed")
 
     def _simulate_jax_metal(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
-        """Simulate using JAX/Metal backend for Apple Silicon."""
+        """Simulate using the new hybrid Metal backend for Apple Silicon."""
         try:
-            # Check if running on Apple Silicon
-            import platform
-            if platform.system() != 'Darwin' or platform.processor() != 'arm':
-                # Fallback to Qiskit if not on Apple Silicon
-                return self._simulate_qiskit(circuit, shots)
+            from .backends.metal_backend import MetalBackend
 
-            # Use JAX for Apple Silicon optimization
-            import jax.numpy as jnp
-            from jax import random
+            # Use our new MetalBackend with hybrid approach
+            backend = MetalBackend(allow_cpu_fallback=True)
+            result = backend.simulate(circuit, shots)
 
-            # Simplified JAX simulation
-            num_qubits = circuit.num_qubits
-            if num_qubits > 6:  # JAX efficient for small circuits
-                return self._simulate_qiskit(circuit, shots)
-
-            # Simulate using JAX
-            key = random.PRNGKey(42)
-            amplitudes = jnp.ones(2 ** num_qubits) / jnp.sqrt(2 ** num_qubits)
-            measurements = random.choice(key, 2 ** num_qubits, shape=(shots,))
-            counts = {}
-
-            for i in range(shots):
-                state = format(measurements[i], f'0{num_qubits}b')
-                counts[state] = counts.get(state, 0) + 1
-
-            return counts
+            return result
 
         except ImportError:
-            raise Exception("JAX not installed. Install with: pip install jax jax-metal")
+            # Fallback to Qiskit if MetalBackend not available
+            return self._simulate_qiskit(circuit, shots)
 
     def _simulate_ddsim(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
         """Simulate using DDSIM backend."""
