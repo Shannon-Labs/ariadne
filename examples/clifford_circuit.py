@@ -1,52 +1,41 @@
 #!/usr/bin/env python3
-"""SIMPLE DEMO: See Ariadne's intelligent routing in action."""
-
-from __future__ import annotations
-
-import sys
-from pathlib import Path
+"""Example: Clifford circuit simulation with Ariadne intelligent routing."""
 
 from qiskit import QuantumCircuit
+from ariadne import simulate
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
-from ariadne import QuantumRouter, simulate
-
-
-def main() -> None:
-    print("🔮 ARIADNE: Intelligent Quantum Router Demo")
-    print("=" * 50)
-
-    print("\n1️⃣ Creating Clifford circuit (30 qubits)...")
-    qc = QuantumCircuit(30, 30)
-    for idx in range(30):
-        qc.h(idx)
-        if idx < 29:
-            qc.cx(idx, idx + 1)
+def main():
+    """Demonstrate Ariadne's intelligent routing for Clifford circuits."""
+    print("🔮 Ariadne Clifford Circuit Demo")
+    print("=" * 40)
+    
+    # Create a Clifford circuit (H, S, CNOT gates only)
+    qc = QuantumCircuit(4, 4)
+    
+    # Add Clifford gates
+    qc.h(0)
+    qc.s(1)
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.h(2)
+    qc.s(3)
+    qc.cx(2, 3)
     qc.measure_all()
-
-    router = QuantumRouter()
-    analysis = router.analyze_circuit(qc)
-
-    print("\n📊 Circuit Analysis:")
-    print(f"  • Entropy: {analysis['entropy']:.2f} bits")
-    print(f"  • Is Clifford? {analysis['is_clifford']}")
-    print(f"  • Recommended backend: {analysis['backend']}")
-    print(f"  • Expected speedup: {analysis['estimated_speedup']}x")
-
-    print("\n2️⃣ Running simulation...")
+    
+    print(f"Circuit: {qc.num_qubits} qubits, {qc.depth()} depth")
+    print(f"Gates: {len([inst for inst, _, _ in qc.data if inst.name != 'measure'])}")
+    
+    # Simulate with Ariadne (should route to Stim for Clifford circuits)
     result = simulate(qc, shots=1000)
-    print("  ✅ Simulation complete!")
-    print(f"  Backend used: {result.backend}")
-    print(f"  Time: {result.time:.3f}s")
-    print(f"  Shots: {result.shots}")
-
-    print("\n" + "=" * 50)
-    print("🎯 Ariadne automatically chose the fastest backend!")
-    print("Without Ariadne, you'd have to know this manually.")
-
+    
+    print(f"\nBackend used: {result.backend_used}")
+    print(f"Execution time: {result.execution_time:.4f}s")
+    print(f"Expected speedup: {result.routing_decision.expected_speedup:.1f}x")
+    print(f"Confidence: {result.routing_decision.confidence_score:.2f}")
+    
+    print(f"\nMeasurement results:")
+    for state, count in sorted(result.counts.items()):
+        print(f"  {state}: {count}")
 
 if __name__ == "__main__":
     main()

@@ -72,8 +72,8 @@ def two_qubit_depth(circ: QuantumCircuit) -> int:
     for inst, qargs, _ in circ.data:
         if inst.num_qubits == 2:
             # Qiskit 2.x no longer exposes .index directly, so pre-compute lookup table
-    qubit_index_map = {qubit: idx for idx, qubit in enumerate(circ.qubits)}
-    qubits = {qubit_index_map[q] for q in qargs}
+            qubit_index_map = {qubit: idx for idx, qubit in enumerate(circ.qubits)}
+            qubits = {qubit_index_map[q] for q in qargs}
             if current_layer_qubits & qubits:
                 depth += 1
                 current_layer_qubits = set(qubits)

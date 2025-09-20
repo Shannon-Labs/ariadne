@@ -244,15 +244,18 @@ class QuantumRouter:
         )
 
     def _simulate_stim(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
-        """Simulate using Stim backend."""
+        """Simulate using Stim backend with real circuit conversion."""
         try:
-            import stim
-            # Simplified for demo - in reality would convert circuit to Stim format
-            # For Clifford circuits, return deterministic results
-            if is_clifford_circuit(circuit):
-                return {"00": shots // 2, "11": shots // 2}
-            else:
-                return {"00": shots}
+            from .converters import convert_qiskit_to_stim, simulate_stim_circuit
+            
+            # Convert Qiskit circuit to Stim format
+            stim_circuit, measurement_map = convert_qiskit_to_stim(circuit)
+            
+            # Simulate using Stim
+            num_clbits = circuit.num_clbits if circuit.num_clbits > 0 else circuit.num_qubits
+            counts = simulate_stim_circuit(stim_circuit, measurement_map, shots, num_clbits)
+            
+            return counts
         except ImportError:
             raise Exception("Stim not installed. Install with: pip install stim")
 
