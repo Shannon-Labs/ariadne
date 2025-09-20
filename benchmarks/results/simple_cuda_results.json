@@ -1,0 +1,128 @@
+{
+  "cuda_available": true,
+  "total_tests": 12,
+  "successful_tests": 12,
+  "results": [
+    {
+      "circuit": "small",
+      "qubits": 4,
+      "shots": 100,
+      "cuda_time": 0.16714219993446022,
+      "cpu_time": 0.0038041999796405435,
+      "speedup": 0.022760260312071075
+    },
+    {
+      "circuit": "small",
+      "qubits": 4,
+      "shots": 1000,
+      "cuda_time": 0.0031553999288007617,
+      "cpu_time": 0.0011468000011518598,
+      "speedup": 0.36344045985565815
+    },
+    {
+      "circuit": "small",
+      "qubits": 4,
+      "shots": 10000,
+      "cuda_time": 0.011274500051513314,
+      "cpu_time": 0.009564300067722797,
+      "speedup": 0.8483125658808289
+    },
+    {
+      "circuit": "medium",
+      "qubits": 8,
+      "shots": 100,
+      "cuda_time": 0.005247700028121471,
+      "cpu_time": 0.0007173999911174178,
+      "speedup": 0.13670750753149027
+    },
+    {
+      "circuit": "medium",
+      "qubits": 8,
+      "shots": 1000,
+      "cuda_time": 0.006131500005722046,
+      "cpu_time": 0.002121299970895052,
+      "speedup": 0.3459675395768425
+    },
+    {
+      "circuit": "medium",
+      "qubits": 8,
+      "shots": 10000,
+      "cuda_time": 0.02023259992711246,
+      "cpu_time": 0.020375899970531464,
+      "speedup": 1.007082631195953
+    },
+    {
+      "circuit": "large",
+      "qubits": 12,
+      "shots": 100,
+      "cuda_time": 0.008470600005239248,
+      "cpu_time": 0.0018248000415042043,
+      "speedup": 0.215427483339495
+    },
+    {
+      "circuit": "large",
+      "qubits": 12,
+      "shots": 1000,
+      "cuda_time": 0.011667500017210841,
+      "cpu_time": 0.0034212999744340777,
+      "speedup": 0.29323333785192074
+    },
+    {
+      "circuit": "large",
+      "qubits": 12,
+      "shots": 10000,
+      "cuda_time": 0.03134300000965595,
+      "cpu_time": 0.020353400032036006,
+      "speedup": 0.6493762570834208
+    },
+    {
+      "circuit": "non_clifford",
+      "qubits": 6,
+      "shots": 100,
+      "cuda_time": 0.00538119999691844,
+      "cpu_time": 0.0006746000144630671,
+      "speedup": 0.12536237546446494
+    },
+    {
+      "circuit": "non_clifford",
+      "qubits": 6,
+      "shots": 1000,
+      "cuda_time": 0.006655200035311282,
+      "cpu_time": 0.0016032999847084284,
+      "speedup": 0.24090936053035372
+    },
+    {
+      "circuit": "non_clifford",
+      "qubits": 6,
+      "shots": 10000,
+      "cuda_time": 0.016855900059454143,
+      "cpu_time": 0.012099899933673441,
+      "speedup": 0.7178435972564304
+    }
+  ],
+  "speedup_stats": {
+    "average": 0.4138686146565775,
+    "median": 0.3196004387143816,
+    "maximum": 1.007082631195953,
+    "minimum": 0.022760260312071075,
+    "std_dev": 0.30173514062356166
+  },
+  "by_circuit_size": {
+    "4": {
+      "average_speedup": 0.4115044286828527,
+      "test_count": 3
+    },
+    "8": {
+      "average_speedup": 0.4965858927680953,
+      "test_count": 3
+    },
+    "12": {
+      "average_speedup": 0.38601235942494555,
+      "test_count": 3
+    },
+    "6": {
+      "average_speedup": 0.36137177775041635,
+      "test_count": 3
+    }
+  }
+}
