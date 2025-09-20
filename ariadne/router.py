@@ -21,6 +21,14 @@ except ImportError:  # pragma: no cover - executed when dependencies missing
     def is_cuda_available() -> bool:  # type: ignore[override]
         return False
 
+try:  # pragma: no cover - import guard for optional Metal support
+    from .backends.metal_backend import MetalBackend, is_metal_available
+except ImportError:  # pragma: no cover - executed when dependencies missing
+    MetalBackend = None  # type: ignore[assignment]
+
+    def is_metal_available() -> bool:  # type: ignore[override]
+        return False
+
 class BackendType(Enum):
     """Available quantum simulation backends."""
 
@@ -70,6 +78,7 @@ class QuantumRouter:
 
     def __init__(self) -> None:
         self._cuda_available = is_cuda_available()
+        self._metal_available = is_metal_available()
 
         self.backend_capacities: Dict[BackendType, BackendCapacity] = {
             BackendType.STIM: BackendCapacity(
@@ -91,9 +100,9 @@ class QuantumRouter:
                 apple_silicon_boost=1.0,
             ),
             BackendType.JAX_METAL: BackendCapacity(
-                clifford_capacity=4.0,
-                general_capacity=7.0,
-                memory_efficiency=0.7,
+                clifford_capacity=8.0 if self._metal_available else 0.0,
+                general_capacity=8.0 if self._metal_available else 0.0,
+                memory_efficiency=0.8,
                 apple_silicon_boost=5.0,
             ),
             BackendType.DDSIM: BackendCapacity(
@@ -145,6 +154,9 @@ class QuantumRouter:
         analysis = analyze_circuit(circuit)
 
         if backend == BackendType.CUDA and not self._cuda_available:
+            return 0.0
+        
+        if backend == BackendType.JAX_METAL and not self._metal_available:
             return 0.0
 
         if analysis["is_clifford"]:
@@ -329,6 +341,13 @@ class QuantumRouter:
             raise RuntimeError("CUDA runtime not available")
 
         backend = CUDABackend()
+        return backend.simulate(circuit, shots)
+
+    def _simulate_jax_metal(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
+        if not self._metal_available or MetalBackend is None:
+            raise RuntimeError("JAX with Metal support not available")
+
+        backend = MetalBackend()
         return backend.simulate(circuit, shots)
 
     @staticmethod
