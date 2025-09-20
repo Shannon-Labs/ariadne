@@ -1,0 +1,198 @@
+[
+  {
+    "name": "ghz_chain_10",
+    "description": "Clifford GHZ ladder (H + CX)",
+    "category": "clifford",
+    "num_qubits": 10,
+    "num_gates": 10,
+    "analysis": {
+      "num_qubits": 10,
+      "depth": 11,
+      "two_qubit_depth": 9,
+      "edges": 9,
+      "treewidth_estimate": 1,
+      "light_cone_width": 2,
+      "clifford_ratio": 1.0,
+      "is_clifford": true
+    },
+    "timings": [
+      {
+        "backend": "ariadne_router",
+        "mean_time": 0.028398000000009915,
+        "stdev": 0.0,
+        "repetitions": 1,
+        "succeeded": true,
+        "error": null
+      },
+      {
+        "backend": "qiskit_basic",
+        "mean_time": 0.002080957999993416,
+        "stdev": 0.0,
+        "repetitions": 1,
+        "succeeded": true,
+        "error": null
+      },
+      {
+        "backend": "stim",
+        "mean_time": 0.009403665999997202,
+        "stdev": 0.0,
+        "repetitions": 1,
+        "succeeded": true,
+        "error": null
+      }
+    ],
+    "router_backend": "stim"
+  },
+  {
+    "name": "random_clifford_12",
+    "description": "Random layered Clifford circuit",
+    "category": "clifford",
+    "num_qubits": 12,
+    "num_gates": 115,
+    "analysis": {
+      "num_qubits": 12,
+      "depth": 25,
+      "two_qubit_depth": 51,
+      "edges": 11,
+      "treewidth_estimate": 1,
+      "light_cone_width": 2,
+      "clifford_ratio": 1.0,
+      "is_clifford": true
+    },
+    "timings": [
+      {
+        "backend": "ariadne_router",
+        "mean_time": 0.06398949999999104,
+        "stdev": 0.0,
+        "repetitions": 1,
+        "succeeded": true,
+        "error": null
+      },
+      {
+        "backend": "qiskit_basic",
+        "mean_time": 0.004854124999980058,
+        "stdev": 0.0,
+        "repetitions": 1,
+        "succeeded": true,
+        "error": null
+      },
+      {
+        "backend": "stim",
+        "mean_time": 0.05979687499998931,
+        "stdev": 0.0,
+        "repetitions": 1,
+        "succeeded": true,
+        "error": null
+      }
+    ],
+    "router_backend": "stim"
+  },
+  {
+    "name": "random_nonclifford_8",
+    "description": "Random non-Clifford rotations + entanglement",
+    "category": "non_clifford",
+    "num_qubits": 8,
+    "num_gates": 124,
+    "analysis": {
+      "num_qubits": 8,
+      "depth": 26,
+      "two_qubit_depth": 25,
+      "edges": 7,
+      "treewidth_estimate": 1,
+      "light_cone_width": 2,
+      "clifford_ratio": 0.22580645161290322,
+      "is_clifford": false
+    },
+    "timings": [
+      {
+        "backend": "ariadne_router",
+        "mean_time": 0.013004708000011078,
+        "stdev": 0.0,
+        "repetitions": 1,
+        "succeeded": true,
+        "error": null
+      },
+      {
+        "backend": "qiskit_basic",
+        "mean_time": 0.0013240420000215636,
+        "stdev": 0.0,
+        "repetitions": 1,
+        "succeeded": true,
+        "error": null
+      }
+    ],
+    "router_backend": "jax_metal"
+  },
+  {
+    "name": "qaoa_maxcut_8_p3",
+    "description": "QAOA MaxCut with p=3 layers",
+    "category": "algorithmic",
+    "num_qubits": 8,
+    "num_gates": 95,
+    "analysis": {
+      "num_qubits": 8,
+      "depth": 38,
+      "two_qubit_depth": 40,
+      "edges": 7,
+      "treewidth_estimate": 1,
+      "light_cone_width": 2,
+      "clifford_ratio": 0.5263157894736842,
+      "is_clifford": false
+    },
+    "timings": [
+      {
+        "backend": "ariadne_router",
+        "mean_time": 0.009026916999999912,
+        "stdev": 0.0,
+        "repetitions": 1,
+        "succeeded": true,
+        "error": null
+      },
+      {
+        "backend": "qiskit_basic",
+        "mean_time": 0.0010125420000122176,
+        "stdev": 0.0,
+        "repetitions": 1,
+        "succeeded": true,
+        "error": null
+      }
+    ],
+    "router_backend": "jax_metal"
+  },
+  {
+    "name": "vqe_ansatz_12",
+    "description": "Hardware-efficient variational ansatz",
+    "category": "algorithmic",
+    "num_qubits": 12,
+    "num_gates": 105,
+    "analysis": {
+      "num_qubits": 12,
+      "depth": 13,
+      "two_qubit_depth": 6,
+      "edges": 11,
+      "treewidth_estimate": 1,
+      "light_cone_width": 2,
+      "clifford_ratio": 0.3142857142857143,
+      "is_clifford": false
+    },
+    "timings": [
+      {
+        "backend": "ariadne_router",
+        "mean_time": 0.0826921670000047,
+        "stdev": 0.0,
+        "repetitions": 1,
+        "succeeded": true,
+        "error": null
+      },
+      {
+        "backend": "qiskit_basic",
+        "mean_time": 0.004342500000007021,
+        "stdev": 0.0,
+        "repetitions": 1,
+        "succeeded": true,
+        "error": null
+      }
+    ],
+    "router_backend": "jax_metal"
+  }
+]

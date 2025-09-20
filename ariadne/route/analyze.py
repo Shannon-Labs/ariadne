@@ -91,3 +91,22 @@ def analyze_circuit(circ: QuantumCircuit) -> dict[str, float | int | bool]:
         "is_clifford": is_clifford_circuit(circ),
     }
 
+
+def should_use_tensor_network(
+    circuit: QuantumCircuit, analysis: dict[str, float | int | bool] | None = None
+) -> bool:
+    """Return ``True`` if the circuit should target a tensor network backend."""
+
+    metrics = analysis or analyze_circuit(circuit)
+
+    if metrics["is_clifford"]:
+        return False
+
+    num_qubits = int(metrics["num_qubits"])
+    if num_qubits <= 4:
+        return False
+    if num_qubits > 30:
+        return False
+
+    return True
+

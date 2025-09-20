@@ -4,17 +4,17 @@ version = "1.0.0"
 description = "Ariadne: The Intelligent Quantum Router - Google Maps for Quantum Circuits with Apple Silicon & CUDA acceleration"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 authors = [
   { name = "Shannon Labs" }
 ]
 keywords = ["quantum", "simulator", "qasm3", "quantum-computing", "apple-silicon", "cuda", "jax", "metal", "intelligent-routing", "bell-labs", "shannon-labs"]
 classifiers = [
-  "Development Status :: 5 - Production/Stable",
+  "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "Intended Audience :: Education",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",

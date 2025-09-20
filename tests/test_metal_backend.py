@@ -34,7 +34,7 @@ def test_get_metal_info_structure() -> None:
 
 def test_backend_without_fallback_requires_metal() -> None:
     if not is_metal_available():
-        with pytest.raises(RuntimeError, match="Metal device.*not available"):
+        with pytest.raises(RuntimeError, match="JAX with Metal support not available"):
             MetalBackend(allow_cpu_fallback=False)
 
 

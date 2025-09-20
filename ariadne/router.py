@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import warnings
 from dataclasses import dataclass
 from enum import Enum
 from time import perf_counter
@@ -10,8 +11,10 @@ from typing import Any
 
 import numpy as np
 from qiskit import QuantumCircuit
+from qiskit.quantum_info import Statevector
 
-from .route.analyze import analyze_circuit
+from .backends.tensor_network_backend import TensorNetworkBackend
+from .route.analyze import analyze_circuit, should_use_tensor_network
 
 try:  # pragma: no cover - import guard for optional CUDA support
     from .backends.cuda_backend import CUDABackend, is_cuda_available
@@ -79,6 +82,7 @@ class QuantumRouter:
     def __init__(self) -> None:
         self._cuda_available = is_cuda_available()
         self._metal_available = is_metal_available()
+        self._tensor_backend: TensorNetworkBackend | None = None
 
         self.backend_capacities: dict[BackendType, BackendCapacity] = {
             BackendType.STIM: BackendCapacity(
@@ -155,8 +159,13 @@ class QuantumRouter:
 
         if backend == BackendType.CUDA and not self._cuda_available:
             return 0.0
-        
+
         if backend == BackendType.JAX_METAL and not self._metal_available:
+            return 0.0
+
+        if backend == BackendType.TENSOR_NETWORK and not should_use_tensor_network(
+            circuit, analysis
+        ):
             return 0.0
 
         if analysis["is_clifford"]:
@@ -281,47 +290,45 @@ class QuantumRouter:
         return {str(key): value for key, value in counts.items()}
 
     def _simulate_tensor_network(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
-        num_qubits = circuit.num_qubits
-        if num_qubits <= 4:
-            return self._simulate_qiskit(circuit, shots)
-
-        total_states = 2 ** min(num_qubits, 10)
-        base_count = shots // total_states
-        remainder = shots % total_states
-
-        counts: dict[str, int] = {}
-        for index in range(total_states):
-            state = format(index, f"0{num_qubits}b")
-            counts[state] = base_count + (1 if index < remainder else 0)
-
-        return counts
-
-    def _simulate_jax_metal(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
-        import platform
-
-        if platform.system() != "Darwin" or platform.machine() != "arm64":
-            return self._simulate_qiskit(circuit, shots)
+        """Simulate ``circuit`` using the tensor network backend."""
 
         try:
-            import jax.numpy as jnp
-        except ImportError as exc:  # pragma: no cover - optional dependency
-            raise RuntimeError("JAX is not installed") from exc
-
-        num_qubits = circuit.num_qubits
-        if num_qubits > 6:
+            return self._real_tensor_network_simulation(circuit, shots)
+        except ImportError as exc:
+            raise RuntimeError(
+                "Tensor network dependencies are not installed"
+            ) from exc
+        except Exception as exc:  # pragma: no cover - graceful fallback path
+            warnings.warn(
+                f"Tensor network simulation failed, falling back to Qiskit: {exc}",
+                RuntimeWarning,
+            )
             return self._simulate_qiskit(circuit, shots)
 
-        amplitudes = jnp.ones(2**num_qubits, dtype=jnp.complex128)
-        amplitudes = amplitudes / jnp.sqrt(amplitudes.size)
-        probabilities = jnp.abs(amplitudes) ** 2
-        probabilities = np.asarray(probabilities)
+    def _real_tensor_network_simulation(
+        self, circuit: QuantumCircuit, shots: int
+    ) -> dict[str, int]:
+        if self._tensor_backend is None:
+            self._tensor_backend = TensorNetworkBackend()
+        return self._tensor_backend.simulate(circuit, shots)
 
-        outcomes = np.random.choice(len(probabilities), size=shots, p=probabilities)
-        counts: dict[str, int] = {}
-        for outcome in outcomes:
-            state = format(outcome, f"0{num_qubits}b")
-            counts[state] = counts.get(state, 0) + 1
-        return counts
+    def _simulate_jax_metal(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
+        """Simulate using the new hybrid Metal backend for Apple Silicon."""
+        try:
+            from .backends.metal_backend import MetalBackend
+
+            # Use our new MetalBackend with hybrid approach
+            backend = MetalBackend(allow_cpu_fallback=True)
+            result = backend.simulate(circuit, shots)
+
+            return result
+
+        except ImportError:
+            # Fallback to Qiskit if MetalBackend not available
+            return self._simulate_qiskit(circuit, shots)
+        except Exception:
+            # Fallback to Qiskit for any other errors
+            return self._simulate_qiskit(circuit, shots)
 
     def _simulate_ddsim(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         try:
@@ -347,6 +354,32 @@ class QuantumRouter:
 
         backend = MetalBackend()
         return backend.simulate(circuit, shots)
+
+    def _sample_statevector_counts(
+        self, circuit: QuantumCircuit, shots: int, seed: int | None = None
+    ) -> dict[str, int]:
+        if shots < 0:
+            raise ValueError("shots must be non-negative")
+        if shots == 0:
+            return {}
+
+        state = Statevector.from_instruction(circuit)
+        probabilities = np.abs(state.data) ** 2
+        total = probabilities.sum()
+        if total == 0.0:
+            raise RuntimeError("Statevector sampling produced invalid probabilities")
+        if not np.isclose(total, 1.0):
+            probabilities = probabilities / total
+
+        rng = np.random.default_rng(seed)
+        outcomes = rng.choice(len(probabilities), size=shots, p=probabilities)
+
+        counts: dict[str, int] = {}
+        num_qubits = circuit.num_qubits
+        for outcome in outcomes:
+            bitstring = format(int(outcome), f"0{num_qubits}b")[::-1]
+            counts[bitstring] = counts.get(bitstring, 0) + 1
+        return counts
 
     @staticmethod
     def _apple_silicon_boost() -> float:
