@@ -1,7 +1,7 @@
 PYTHON := python3
 PKGS := ariadne ariadne_mac
 
-.PHONY: setup dev lint typecheck test examples bench format
+.PHONY: setup dev lint typecheck test examples bench format benchmark-metal benchmark-cuda benchmark-all
 
 setup:
 	$(PYTHON) -m pip install -U pip
@@ -45,3 +45,13 @@ summarize:
 
 bench:
 	@echo "Benchmarks TBD"
+
+# Benchmark targets
+benchmark-metal:
+	$(PYTHON) benchmarks/metal_vs_cpu.py --shots 1000
+
+benchmark-cuda:
+	$(PYTHON) benchmarks/cuda_vs_cpu.py --shots 1000
+
+benchmark-all:
+	$(PYTHON) benchmarks/run_all_benchmarks.py --shots 1000
