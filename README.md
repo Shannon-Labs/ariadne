@@ -14,7 +14,7 @@
 
 </div>
 
-Ariadne is an intelligent quantum circuit router that analyzes your quantum circuits and automatically routes them to the most performant simulator backend. No machine learning black boxes, no unpredictable agent behavior—just deterministic mathematical analysis that makes the right choice every time.
+Ariadne is a mathematically rigorous quantum circuit router that analyzes your circuits and automatically routes them to the most performant simulator backend. Following the "No ML, just math" philosophy, the routing stack has been streamlined, eliminating complex wrappers like `QuantumRouter` and removing all simulated timing logic and ML components. This ensures deterministic, auditable decisions based purely on circuit properties and refactored calibration constants.
 
 [📚 Documentation Site](https://shannon-labs.github.io/ariadne) • [📖 Local Docs](docs/README.md) • [💡 Examples](examples/README.md) • [🚀 Getting Started](#-getting-started) • [📊 Benchmarks](#-benchmarks) • [🤝 Contributing](#-contributing)
 
@@ -26,6 +26,7 @@ Ariadne is an intelligent quantum circuit router that analyzes your quantum circ
 |------------|--------|
 | **🧠 Intelligent Routing** | Mathematical analysis of circuit properties (entropy, treewidth, Clifford ratio) automatically selects the optimal backend. |
 | **⚡ Stim Auto-Detection** | Clifford circuits are automatically routed to Stim for massive speedups on large circuits. |
+| **🚀 CUDA Optimization Wins** | Quick wins achieved through optimized indexing and dynamic kernel launch configuration for immediate performance gains. |
 | **🍏 Apple Silicon Acceleration** | JAX-Metal backend delivers 1.16–1.51× speedups vs. CPU on M-series chips. |
 | **🔄 Zero Configuration** | `simulate(circuit, shots)` just works—no vendor imports or backend selection logic required. |
 | **🔢 Universal Fallback** | Always returns a result, even when specialized backends fail. |
@@ -119,33 +120,6 @@ result = simulate(qc, shots=1000)
 print(f"Backend used: {result.backend_used}")  # -> stim
 ```
 
-### Inspecting Routing Decisions
-
-Understand what Ariadne sees in your circuit and why it makes routing decisions.
-
-```python
-from ariadne import QuantumRouter
-from qiskit import QuantumCircuit
-
-# Create a circuit to analyze
-qc = QuantumCircuit(8, 8)
-qc.h(range(4))
-qc.cx(0, 1)
-qc.cx(1, 2)
-qc.cx(2, 3)
-qc.ry(0.5, 4)
-qc.rz(0.25, 5)
-qc.measure_all()
-
-router = QuantumRouter()
-decision = router.select_optimal_backend(qc)
-
-print(f"Circuit entropy: {decision.circuit_entropy:.3f}")
-print(f"Recommended backend: {decision.recommended_backend}")
-print(f"Confidence score: {decision.confidence_score:.3f}")
-```
-
----
 
 ## 📊 Benchmarks
 
