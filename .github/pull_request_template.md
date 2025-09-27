@@ -1,64 +1,69 @@
-## 📋 Description
-<!-- Provide a brief description of your changes -->
+# Pull Request
 
-## 🎯 Related Issue
-<!-- Link to the issue this PR addresses -->
-Fixes #(issue number)
+## Summary
+<!-- Provide a brief description of the changes in this PR -->
 
-## 🔄 Type of Change
-<!-- Check all that apply -->
+## Type of Change
 - [ ] 🐛 Bug fix (non-breaking change that fixes an issue)
-- [ ] ✨ New feature (non-breaking change that adds functionality)
-- [ ] 💥 Breaking change (fix or feature that causes existing functionality to not work as expected)
+- [ ] ✨ New feature (non-breaking change that adds functionality) 
+- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] 📚 Documentation update
-- [ ] 🚀 Performance improvement
-- [ ] ♻️ Code refactoring
+- [ ] ⚡ Performance improvement
+- [ ] 🔧 Code refactoring
 - [ ] 🧪 Test improvement
+- [ ] 🏗️ Infrastructure/CI changes
 
-## 📊 Performance Impact
-<!-- For performance-related changes, provide benchmark results -->
-<details>
-<summary>Benchmark Results</summary>
+## Backend Changes
+- [ ] Modified existing backend implementation
+- [ ] Added new quantum backend
+- [ ] Updated router selection logic
+- [ ] Enhanced performance benchmarking
+- [ ] Updated backend interface
 
-```
-Before: X.XXs
-After: X.XXs
-Speedup: XX%
-```
+## Impact
+<!-- Describe the impact of your changes -->
+- **Performance**: <!-- Any performance implications -->
+- **API**: <!-- Any API changes -->
+- **Compatibility**: <!-- Backward compatibility considerations -->
 
-</details>
+## Testing
+- [ ] I have added tests that prove my fix is effective or that my feature works
+- [ ] New and existing unit tests pass locally (`make test`)
+- [ ] I have run relevant benchmarks if applicable
+- [ ] I have tested on the target platform (Apple Silicon/CUDA/etc.)
+- [ ] Integration tests pass
 
-## 🧪 Testing
-<!-- Describe the tests you ran -->
-- [ ] All existing tests pass
-- [ ] Added new unit tests
-- [ ] Added integration tests
-- [ ] Tested on multiple platforms
-- [ ] Performance benchmarks show no regression
-
-### Test Configuration
-- **OS**: [e.g., macOS 14.0, Ubuntu 22.04, Windows 11]
-- **Python**: [e.g., 3.9.7]
-- **Hardware**: [e.g., M1 Mac, RTX 3080]
-
-## 📸 Screenshots
-<!-- If applicable, add screenshots to help explain your changes -->
-
-## ✅ Checklist
-<!-- Check all that apply -->
-- [ ] My code follows the project's style guidelines
-- [ ] I have performed a self-review of my own code
+## Code Quality
+- [ ] My code follows the project's style guidelines (ruff, mypy)
+- [ ] I have performed a self-review of my code
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-- [ ] Any dependent changes have been merged and published
+- [ ] My changes generate no new warnings or linting errors
+- [ ] I have updated type hints where applicable
 
-## 📝 Additional Notes
-<!-- Add any additional notes, concerns, or discussion points -->
+## Documentation
+- [ ] I have updated relevant documentation
+- [ ] I have added/updated docstrings for new functions/classes
+- [ ] I have updated the CHANGELOG.md if applicable
+- [ ] Examples and tutorials are updated if needed
+
+## Dependencies
+- [ ] Any new dependencies are justified and documented
+- [ ] I have updated pyproject.toml if needed
+- [ ] Dependency versions are properly pinned
+
+## Related Issues
+<!-- Link any related issues -->
+Fixes #<!-- issue number -->
+Closes #<!-- issue number -->
+Related to #<!-- issue number -->
+
+## Additional Context
+<!-- Add any other context about the PR here -->
+
+## Reviewer Notes
+<!-- Any specific areas you'd like reviewers to focus on -->
 
 ---
 
-### 🏆 Contributor License Agreement
-By submitting this pull request, I confirm that my contribution is made under the terms of the MIT license.
+**Reminder**: Ariadne's mission is to provide intelligent quantum routing with **no ML, just math**. Ensure your changes align with this philosophy.

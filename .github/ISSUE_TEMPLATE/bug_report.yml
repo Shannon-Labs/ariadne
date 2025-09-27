@@ -1,144 +1,120 @@
-name: 🐛 Bug Report
-description: Report a bug in Ariadne
+name: Bug Report
+description: File a bug report to help us improve Ariadne
 title: "[BUG] "
-labels: ["bug", "needs-triage"]
+labels: ["bug", "triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report this bug! Please fill out the form below to help us fix it faster.
+        Thank you for taking the time to report a bug! Please fill out the information below to help us diagnose and fix the issue.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I have searched existing issues to ensure this bug hasn't been reported
+          required: true
+        - label: I can reproduce this bug consistently
+          required: true
+        - label: I have included all necessary information below
+          required: true
 
   - type: textarea
-    id: description
+    id: bug-description
     attributes:
       label: Bug Description
       description: A clear and concise description of what the bug is.
-      placeholder: |
-        When I try to route a Clifford circuit with 20 qubits, Ariadne incorrectly selects Qiskit instead of Stim...
+      placeholder: Describe the unexpected behavior...
     validations:
       required: true
 
   - type: textarea
-    id: reproduction
+    id: reproduction-steps
     attributes:
       label: Steps to Reproduce
-      description: Steps to reproduce the behavior
+      description: Please provide detailed steps to reproduce the issue.
       placeholder: |
-        1. Create a circuit with...
-        2. Call simulate() with...
-        3. See error...
-      value: |
-        ```python
-        from qiskit import QuantumCircuit
-        from ariadne import simulate
-        
-        # Your code here
-        ```
+        1. Install ariadne-quantum
+        2. Run the following code...
+        3. See error
     validations:
       required: true
 
   - type: textarea
-    id: expected
+    id: expected-behavior
     attributes:
       label: Expected Behavior
-      description: What you expected to happen
-      placeholder: Should route to Stim backend for Clifford circuits
+      description: What did you expect to happen?
+      placeholder: Describe what should have happened...
     validations:
       required: true
 
   - type: textarea
-    id: actual
+    id: code-sample
     attributes:
-      label: Actual Behavior
-      description: What actually happened
-      placeholder: Routes to Qiskit backend instead
+      label: Minimal Code Sample
+      description: Please provide a minimal code sample that reproduces the issue.
+      render: python
+      placeholder: |
+        from ariadne import simulate
+        # Your code here...
     validations:
-      required: true
+      required: false
+
+  - type: textarea
+    id: error-output
+    attributes:
+      label: Error Output
+      description: Please include any error messages or unexpected output.
+      render: shell
+      placeholder: Paste error output here...
+    validations:
+      required: false
 
   - type: dropdown
-    id: severity
+    id: backend
     attributes:
-      label: Severity
-      description: How severe is this bug?
+      label: Backend
+      description: Which backend(s) are affected?
+      multiple: true
       options:
-        - Critical (blocks all usage)
-        - High (blocks major functionality)
-        - Medium (workaround exists)
-        - Low (minor issue)
-    validations:
-      required: true
+        - Stim
+        - Metal (Apple Silicon)
+        - CUDA
+        - Qiskit Basic
+        - Tensor Network
+        - DDSIM
+        - Router (automatic selection)
+        - Unknown/Other
 
   - type: input
-    id: version
+    id: ariadne-version
     attributes:
       label: Ariadne Version
-      description: What version of Ariadne are you using?
-      placeholder: "1.1.0"
-    validations:
-      required: true
-
-  - type: input
-    id: python-version
-    attributes:
-      label: Python Version
-      description: What version of Python are you using?
-      placeholder: "3.9.7"
-    validations:
-      required: true
-
-  - type: dropdown
-    id: os
-    attributes:
-      label: Operating System
-      options:
-        - macOS
-        - Linux
-        - Windows
-        - Other
-    validations:
-      required: true
-
-  - type: dropdown
-    id: hardware
-    attributes:
-      label: Hardware Type
-      description: What hardware are you using?
-      options:
-        - NVIDIA GPU (CUDA)
-        - Apple Silicon (M1/M2/M3/M4)
-        - CPU only
-        - Other GPU
-      multiple: true
+      description: What version of ariadne-quantum are you using?
+      placeholder: e.g., 1.0.0
     validations:
       required: true
 
   - type: textarea
-    id: logs
+    id: environment
     attributes:
-      label: Error Logs
-      description: Please paste any relevant error messages or logs
-      render: shell
+      label: Environment Details
+      description: Please provide details about your environment.
       placeholder: |
-        Traceback (most recent call last):
-          File "example.py", line 10, in <module>
-            result = simulate(circuit)
-          ...
+        - OS: macOS 14.5 / Ubuntu 22.04 / Windows 11
+        - Python version: 3.11.5
+        - Architecture: Apple Silicon M4 / Intel x64 / NVIDIA GPU
+        - Additional relevant packages: qiskit 1.2.0, jax 0.4.25
+    validations:
+      required: true
 
   - type: textarea
-    id: additional
+    id: additional-context
     attributes:
       label: Additional Context
-      description: Add any other context about the problem here
-      placeholder: This started happening after upgrading from version 1.0.0...
-
-  - type: checkboxes
-    id: checklist
-    attributes:
-      label: Checklist
-      options:
-        - label: I have searched for existing issues
-          required: true
-        - label: I have provided a minimal reproduction example
-          required: true
-        - label: I am using the latest version of Ariadne
-          required: false
+      description: Add any other context about the problem here.
+      placeholder: Screenshots, logs, or other relevant information...
+    validations:
+      required: false

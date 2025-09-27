@@ -1,30 +1,69 @@
-name: ✨ Feature Request
-description: Suggest a new feature for Ariadne
+name: Feature Request
+description: Suggest a new feature or enhancement for Ariadne
 title: "[FEATURE] "
-labels: ["enhancement", "needs-triage"]
+labels: ["enhancement", "feature-request"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for suggesting a feature! We love hearing ideas from the community.
+        Thank you for suggesting a feature! Help us understand what you'd like to see improved.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I have searched existing issues to ensure this feature hasn't been requested
+          required: true
+        - label: This feature aligns with Ariadne's mission of intelligent quantum routing
+          required: true
+
+  - type: dropdown
+    id: feature-type
+    attributes:
+      label: Feature Type
+      description: What type of feature are you requesting?
+      options:
+        - New quantum backend integration
+        - Router intelligence improvement
+        - Performance optimization
+        - API enhancement
+        - Documentation improvement
+        - Developer experience
+        - Other
 
   - type: textarea
-    id: problem
+    id: feature-description
     attributes:
-      label: Problem Statement
-      description: What problem does this feature solve?
-      placeholder: |
-        Currently, Ariadne doesn't support routing to IBM Quantum cloud services...
+      label: Feature Description
+      description: A clear and concise description of the feature you'd like.
+      placeholder: Describe the feature you'd like to see...
     validations:
       required: true
 
   - type: textarea
-    id: solution
+    id: problem-statement
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve?
+      placeholder: |
+        Current limitations:
+        - Problem 1...
+        - Problem 2...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
     attributes:
       label: Proposed Solution
-      description: Describe your proposed solution
+      description: How would you like this feature to work?
       placeholder: |
-        Add a new backend that interfaces with IBM Quantum via Qiskit Runtime...
+        The feature should...
+        API example:
+        ```python
+        # Example usage
+        ```
     validations:
       required: true
 
@@ -32,64 +71,35 @@ body:
     id: alternatives
     attributes:
       label: Alternatives Considered
-      description: What alternatives have you considered?
-      placeholder: |
-        - Using Qiskit directly (but loses routing intelligence)
-        - Building a custom wrapper (too much work)
-
-  - type: textarea
-    id: api-example
-    attributes:
-      label: Example API Usage
-      description: How would users interact with this feature?
-      value: |
-        ```python
-        from ariadne import QuantumRouter
-        
-        router = QuantumRouter()
-        # Your proposed API here
-        ```
+      description: What alternative solutions have you considered?
+      placeholder: Describe alternative approaches...
+    validations:
+      required: false
 
   - type: dropdown
-    id: impact
+    id: priority
     attributes:
-      label: Expected Impact
-      description: How many users would benefit?
+      label: Priority
+      description: How important is this feature to you?
       options:
-        - Most users would benefit
-        - Many users would benefit
-        - Some users would benefit
-        - Niche use case
-    validations:
-      required: true
-
-  - type: dropdown
-    id: breaking
-    attributes:
-      label: Breaking Changes
-      description: Would this require breaking changes?
-      options:
-        - No breaking changes
-        - Minor breaking changes
-        - Major breaking changes
-        - Not sure
-    validations:
-      required: true
+        - Low (nice to have)
+        - Medium (would help workflow)
+        - High (blocking current work)
+        - Critical (cannot proceed without it)
 
   - type: textarea
-    id: implementation
+    id: additional-context
     attributes:
-      label: Implementation Ideas
-      description: Any thoughts on how to implement this?
-      placeholder: |
-        Could extend the BackendSelector class to include cloud backends...
+      label: Additional Context
+      description: Add any other context, screenshots, or examples.
+      placeholder: Links to papers, benchmarks, or examples...
+    validations:
+      required: false
 
   - type: checkboxes
     id: contribution
     attributes:
       label: Contribution
       options:
-        - label: I am willing to help implement this feature
+        - label: I would be willing to contribute to implementing this feature
           required: false
-        - label: I have searched for similar feature requests
-          required: true

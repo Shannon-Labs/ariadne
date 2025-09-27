@@ -1,36 +1,67 @@
-# Ariadne: Intelligent Quantum Router 🔮
+<div align="center">
 
-## Automatic routing that unlocks larger circuits **and** Apple Silicon acceleration
+# Ariadne
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+### Take Agency Back from the Agents
+
+**Intelligent Quantum Circuit Routing • No ML, Just Math**
+
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![PyPI version](https://badge.fury.io/py/ariadne-quantum.svg)](https://badge.fury.io/py/ariadne-quantum)
+[![CI/CD](https://github.com/Shannon-Labs/ariadne/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/Shannon-Labs/ariadne/actions)
+[![codecov](https://codecov.io/gh/Shannon-Labs/ariadne/branch/main/graph/badge.svg)](https://codecov.io/gh/Shannon-Labs/ariadne)
 
-Ariadne analyzes your quantum circuit and routes it to the simulator that can actually run it. You get:
+*Deterministic quantum routing that automatically selects the optimal backend for your circuits*
 
-- **Automatic Clifford → Stim routing** so 30–50 qubit stabilizer circuits *just work* (no more Qiskit 24-qubit crashes).
-- **Hybrid Metal backend** on Apple Silicon delivering 1.4–1.8× speedups over the CPU baseline for general circuits.
-- **Single zero-config API** that hides the differences between Qiskit, Stim, tensor networks, and Metal.
-- **Graceful fallbacks** when a specialist backend cannot handle a circuit—Ariadne always returns a result.
+[📚 Documentation](https://shannon-labs.github.io/ariadne) • [🚀 Quick Start](#-quick-start) • [📊 Benchmarks](#-benchmarks) • [🤝 Contributing](CONTRIBUTING.md)
 
-We are not promising “quantum speedups.” We are making *existing* simulators automatic, accessible, and faster on Apple Silicon.
+</div>
 
 ---
 
-## ✅ What’s working today
+## 🎯 What is Ariadne?
 
-| Capability | What it means for you |
-|------------|-----------------------|
-| **Stim auto-detection** | Clifford circuits are routed to Stim without changing your code. Example: 50-qubit GHZ states simulated in milliseconds. |
-| **Metal hybrid backend (Apple Silicon)** | New backend (`ariadne.backends.metal_backend`) bypasses JAX’s Metal bug and yields 1.4–1.8× speedups vs. CPU on M4 Max. |
-| **Router intelligence** | Analyzes entropy, treewidth, and gate mix to pick Stim, Metal, generic statevector, tensor network, or DDSIM automatically. |
-| **Zero configuration** | `simulate(circuit, shots)` is all you need—no vendor-specific imports. |
-| **Open source + extensible** | Apache 2.0, modular backend interface, detailed integration guide. |
+Ariadne is an **intelligent quantum circuit router** that analyzes your quantum circuits and automatically routes them to the simulator that can actually run them. No machine learning black boxes, no unpredictable agent behavior—just **deterministic mathematical analysis** that makes the right choice every time.
 
-### ❗ Honest limitations (September 2025)
-- CUDA backend still requires an NVIDIA GPU (not covered in current benchmarks).
-- Routing adds overhead for very small circuits; call Qiskit directly if you only need a few qubits.
-- Metal backend currently targets Apple Silicon (macOS 14+, Python 3.10+ with the bundled hybrid backend).
-- Project is beta—verify results for production workloads.
+### The Problem
+- Qiskit crashes on 30-qubit Clifford circuits that Stim handles effortlessly
+- Apple Silicon users miss out on hardware acceleration due to JAX bugs
+- Researchers waste time manually choosing between simulators
+- Each backend has different strengths, but switching requires rewriting code
+
+### The Solution
+```python
+from ariadne import simulate
+
+# That's it. Ariadne handles the rest.
+result = simulate(your_circuit, shots=1000)
+```
+
+**Ariadne automatically:**
+- Routes 30-50 qubit Clifford circuits to Stim (no more crashes)
+- Accelerates non-Clifford circuits on Apple Silicon with Metal backend
+- Falls back gracefully when specialized backends can't handle a circuit
+- Provides honest performance metrics and backend selection reasoning
+
+---
+
+## ✨ What's Working Today
+
+| Capability | Impact |
+|------------|--------|
+| **🧠 Intelligent Routing** | Mathematical analysis of circuit properties (entropy, treewidth, Clifford ratio) automatically selects optimal backend |
+| **⚡ Stim Auto-Detection** | Clifford circuits route to Stim without code changes. Run 50-qubit GHZ states in milliseconds |
+| **🎨 Metal Apple Silicon** | Hybrid NumPy + Accelerate backend delivers 1.4–1.8× speedups vs CPU on M-series chips |
+| **🔄 Zero Configuration** | `simulate(circuit, shots)` just works—no vendor imports or backend selection logic |
+| **🔢 Universal Fallback** | Always returns a result, even when specialized backends fail |
+| **📋 Open & Extensible** | Apache 2.0 licensed with modular backend interface for community contributions |
+
+### ⚠️ Honest Limitations
+- **Beta software**: Verify results for production workloads
+- **Small circuit overhead**: For <10 qubits, direct backend calls may be faster due to routing analysis
+- **Platform dependencies**: Metal requires macOS 14+ with Python 3.11+; CUDA needs NVIDIA GPU
+- **Router learning**: Performance improves as we gather more real-world circuit patterns
 
 ---
 
