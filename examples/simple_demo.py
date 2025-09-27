@@ -3,14 +3,7 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
 from qiskit import QuantumCircuit
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from ariadne import QuantumRouter, simulate
 
@@ -39,9 +32,9 @@ def main() -> None:
     print("\n2️⃣ Running simulation...")
     result = simulate(qc, shots=1000)
     print("  ✅ Simulation complete!")
-    print(f"  Backend used: {result.backend}")
-    print(f"  Time: {result.time:.3f}s")
-    print(f"  Shots: {result.shots}")
+    print(f"  Backend used: {result.backend_used.value}")
+    print(f"  Time: {result.execution_time:.3f}s")
+    print(f"  Shots: {result.metadata['shots']}")
 
     print("\n" + "=" * 50)
     print("🎯 Ariadne automatically chose the fastest backend!")

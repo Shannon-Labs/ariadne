@@ -612,3 +612,43 @@ def analyze_batch_results(results: List,
     plots = visualizer.create_batch_analysis_plots(analysis, save_prefix)
     
     return analysis, plots
+
+
+def visualize_decision(circuit_name: str, decision_path: list[tuple[str, str]], final_backend: str, performance_gain: str):
+    """
+    Prints a clear, structured, text-based visualization of the routing decision process.
+    
+    Args:
+        circuit_name: The name of the quantum circuit being routed.
+        decision_path: A list of tuples [(analyzer_name, result_description)] representing the filter chain checks.
+        final_backend: The name of the backend selected by the router.
+        performance_gain: A string describing the estimated performance gain.
+    """
+    
+    SEPARATOR = "=" * 50
+    CHECK_SEPARATOR = "-" * 50
+    
+    print(SEPARATOR)
+    print(f"ARIADNE ROUTING DECISION: {circuit_name}")
+    print(SEPARATOR)
+    
+    for i, (analyzer, result) in enumerate(decision_path):
+        # Determine Decision based on result string content for visualization clarity
+        result_upper = result.upper()
+        if "ROUTE IMMEDIATELY" in result_upper:
+            decision = "ROUTE IMMEDIATELY"
+        elif "PASS" in result_upper:
+            decision = "CONTINUE CHAIN"
+        elif "FAIL" in result_upper:
+            decision = "REJECT BACKEND"
+        else:
+            decision = "ANALYSIS COMPLETE"
+            
+        print(f"[{i+1}] Analyzer: {analyzer}")
+        print(f"    Result: {result}")
+        print(f"    Decision: {decision}")
+        print(CHECK_SEPARATOR)
+        
+    print(f"FINAL BACKEND: {final_backend}")
+    print(f"PERFORMANCE GAIN: {performance_gain}")
+    print(SEPARATOR)

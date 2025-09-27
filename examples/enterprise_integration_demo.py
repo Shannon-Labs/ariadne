@@ -23,10 +23,37 @@ from rich.layout import Layout
 from rich.columns import Columns
 from rich.panel import Panel as RichPanel
 
-# Import Ariadne components
-from ariadne.quantum_detector import QuantumThreatDetector
-from ariadne.cbad_integration import CompressionAnomalyDetector
-from ariadne.api import QuantumDetectionAPI
+# Import Ariadne components (using stubs for non-core enterprise modules)
+# from ariadne.quantum_detector import QuantumThreatDetector
+# from ariadne.cbad_integration import CompressionAnomalyDetector
+# from ariadne.api import QuantumDetectionAPI
+
+class QuantumThreatDetector:
+    """Stub for QuantumThreatDetector."""
+    def analyze_quantum_threat(self, log: Dict[str, Any]) -> float:
+        # Simple heuristic: check for 'quantum_attack_simulation' operation
+        if log.get('operation') == 'quantum_attack_simulation':
+            return 0.95
+        # Check for unusually low timing (proxy for quantum speedup)
+        if log.get('timing', 1.0) < 0.0005:
+            return 0.85
+        return 0.1
+
+class CompressionAnomalyDetector:
+    """Stub for CompressionAnomalyDetector."""
+    pass
+
+class QuantumDetectionAPI:
+    """Stub for QuantumDetectionAPI (minimal implementation for demo)."""
+    async def start_server(self, port: int):
+        # Simulate server startup
+        await asyncio.sleep(0.1)
+        print(f"Mock API server running on port {port}")
+    
+    async def stop_server(self):
+        # Simulate server shutdown
+        await asyncio.sleep(0.1)
+        print("Mock API server stopped")
 
 console = Console()
 

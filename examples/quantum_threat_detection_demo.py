@@ -18,10 +18,35 @@ from rich.progress import Progress
 from rich.table import Table
 from rich.text import Text
 
-# Import Ariadne components
-from ariadne.quantum_detector import QuantumThreatDetector
-from ariadne.cbad_integration import CompressionAnomalyDetector
-from ariadne.driftlock import DriftlockSynchronizer
+# Import Ariadne components (using stubs for non-core enterprise modules)
+
+class QuantumThreatDetector:
+    """Stub for QuantumThreatDetector."""
+    def analyze_quantum_threat(self, pattern: dict) -> float:
+        # Simple heuristic: check for quantum speedup timing
+        if pattern.get('pattern_type') == 'quantum_attack':
+            return 0.95
+        return 0.1
+
+class CompressionAnomalyDetector:
+    """Stub for CompressionAnomalyDetector."""
+    def __init__(self):
+        self.trained = False
+    
+    def train_on_pattern(self, pattern: dict):
+        self.trained = True
+    
+    def analyze_pattern(self, pattern: dict) -> float:
+        # Anomaly score based on timing deviation from normal (~0.001s)
+        timing = pattern.get('timing', 1.0)
+        deviation = abs(timing - 0.001)
+        # Normalize deviation to a score (higher is more anomalous)
+        return min(1.0, deviation * 1000)
+
+class DriftlockSynchronizer:
+    """Stub for DriftlockSynchronizer."""
+    def sync(self):
+        pass
 
 console = Console()
 

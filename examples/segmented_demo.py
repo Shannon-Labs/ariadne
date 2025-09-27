@@ -12,9 +12,9 @@ from pathlib import Path
 from qiskit import QuantumCircuit
 import numpy as np
 
-from ariadne_mac.route.execute import execute, execute_segmented
-from ariadne_mac.route.analyze import analyze_circuit
-from ariadne_mac.utils.logs import summarize_run
+from ariadne.route.execute import execute, execute_segmented
+from ariadne.route.analyze import analyze_circuit
+# from ariadne.utils.logs import summarize_run # Summarize run is not used in this demo
 
 
 def create_hybrid_circuit(n_qubits: int = 12) -> QuantumCircuit:

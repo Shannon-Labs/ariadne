@@ -19,14 +19,113 @@ import asyncio
 import time
 from pathlib import Path
 
-from ariadne.quantum_network import (
-    QuantumNetworkCoordinator,
-    QuantumNetworkConfig,
-    NetworkNode
-)
-from ariadne.driftlock import DriftlockIntegration
-from entruptor.quantum_components.entruptor_integration import EntruptorIntegration
-from ariadne.quantum_network.research.quantum_information_theory import *
+from dataclasses import dataclass
+from typing import List, Tuple, Dict, Any
+import json
+
+# Stubs for non-core network components
+@dataclass
+class QuantumNetworkConfig:
+    timing_precision_ps: int
+    max_nodes: int
+    entanglement_fidelity_threshold: float
+    anomaly_detection_sensitivity: float
+    qkd_key_rate_min: float
+    sensor_sync_tolerance_ps: int
+
+@dataclass
+class NetworkNode:
+    node_id: str
+    node_type: str
+    location: Tuple[float, float, int]
+    status: str = "inactive"
+
+@dataclass
+class AnomalyResult:
+    is_anomaly: bool
+    anomaly_score: float
+    confidence: float
+
+@dataclass
+class QuantumStateData:
+    state_id: str
+    timestamp: float
+    raw_data: bytes
+    coherence: float
+    fidelity: float
+    entanglement_entropy: float
+    phase_stability: float
+    gate_fidelity: float
+    measurement_correlation: float
+
+class QuantumNetworkCoordinator:
+    def __init__(self, config: QuantumNetworkConfig):
+        self.config = config
+        self.nodes: Dict[str, NetworkNode] = {}
+        self.uptime = 0.0
+        self.start_time = time.time()
+
+    async def initialize_network(self):
+        await asyncio.sleep(0.1)
+
+    def add_node(self, node: NetworkNode):
+        self.nodes[node.node_id] = node
+        node.status = "active"
+
+    async def synchronize_network(self):
+        await asyncio.sleep(0.5)
+
+    def display_status_table(self):
+        print("Mock Network Status Table Displayed")
+
+    async def run_diagnostics(self) -> Dict[str, Any]:
+        self.uptime = time.time() - self.start_time
+        return {
+            'network_status': {
+                'status': 'OPERATIONAL',
+                'total_nodes': len(self.nodes),
+                'uptime_seconds': self.uptime
+            }
+        }
+
+    def save_configuration(self, path: Path):
+        with open(path, 'w') as f:
+            json.dump({"config": self.config.__dict__, "nodes": [n.__dict__ for n in self.nodes.values()]}, f, indent=2)
+
+class DriftlockIntegration:
+    def __init__(self, precision_ps: int):
+        self.precision = precision_ps
+
+    async def connect(self):
+        await asyncio.sleep(0.1)
+
+    async def disconnect(self):
+        await asyncio.sleep(0.1)
+
+    async def synchronize_nodes(self, node_ids: List[str]) -> List[Dict[str, Any]]:
+        return [{"node_id": nid, "sync_error_ps": 1.5} for nid in node_ids]
+
+class EntruptorIntegration:
+    def __init__(self, sensitivity: float):
+        self.sensitivity = sensitivity
+
+    async def connect(self):
+        await asyncio.sleep(0.1)
+
+    async def disconnect(self):
+        await asyncio.sleep(0.1)
+
+    async def analyze_quantum_state(self, state: QuantumStateData) -> AnomalyResult:
+        # Simple anomaly logic based on entanglement entropy
+        is_anomaly = state.entanglement_entropy > 0.8
+        return AnomalyResult(
+            is_anomaly=is_anomaly,
+            anomaly_score=0.9 if is_anomaly else 0.1,
+            confidence=0.99
+        )
+
+# Placeholder for quantum information theory imports
+# from ariadne.quantum_network.research.quantum_information_theory import *
 
 
 async def main():

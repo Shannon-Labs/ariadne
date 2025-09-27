@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-from math import log2
-
-from ariadne_mac.route.execute import estimate_sv_bytes
-from examples._util import write_report
+from examples._util import write_report, estimate_sv_bytes
 
 
 def fmt_bytes(n: int) -> str:

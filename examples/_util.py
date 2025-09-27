@@ -4,6 +4,11 @@ from pathlib import Path
 from typing import Optional
 
 
+def estimate_sv_bytes(n_qubits: int, complex_bytes: int = 16) -> int:
+    """Estimate memory required for a state vector simulation."""
+    return (2**n_qubits) * complex_bytes
+
+
 def write_report(name: str, text: str, folder: Optional[Path] = None) -> Path:
     folder = folder or Path("reports")
     folder.mkdir(parents=True, exist_ok=True)

@@ -16,8 +16,9 @@ from rich.panel import Panel
 from rich.text import Text
 
 # Import Ariadne components
-from ..router import QuantumRouter, BackendType, simulate
-from ..route.analyze import analyze_circuit
+from ariadne import QuantumRouter, simulate
+from ariadne.router import BackendType
+from ariadne.route.analyze import analyze_circuit
 
 
 console = Console()

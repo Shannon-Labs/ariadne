@@ -3,8 +3,7 @@ from __future__ import annotations
 from qiskit import QuantumCircuit
 from qiskit.qasm3 import dumps as qasm3_dumps, loads as qasm3_loads
 
-from ariadne.io.qasm3 import load_qasm3, dump_qasm3
-from ariadne.verify.qcec import witness_if_not
+from ariadne.verify.qcec import statevector_equiv
 from examples._util import write_report
 
 
@@ -22,18 +21,16 @@ def main() -> None:
     circ = build_circuit()
     qasm_text = qasm3_dumps(circ)
 
-    # Parse via OpenQASM3 reference parser and roundtrip back
-    program = load_qasm3(qasm_text)
-    qasm_round = dump_qasm3(program)
-    circ_round = qasm3_loads(qasm_round)
+    # Perform QASM3 roundtrip using Qiskit's native parser
+    circ_round = qasm3_loads(qasm_text)
 
-    w = witness_if_not(circ, circ_round)
+    equivalent = statevector_equiv(circ, circ_round)
     report = f"""
 # QASM3 Roundtrip Report
 
 - Gates: {len(circ.data)}
-- Equivalent: {w.equivalent}
-- Method: {w.message}
+- Equivalent: {equivalent}
+- Method: Statevector Comparison
 """
     path = write_report("01_qasm3_roundtrip", report)
     print(f"Wrote report to {path}")

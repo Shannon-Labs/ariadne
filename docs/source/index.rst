@@ -6,6 +6,7 @@ Welcome to Ariadne's documentation!
    :caption: Contents:
 
    modules
+   advanced_backends_routing
 
 Indices and tables
 ==================

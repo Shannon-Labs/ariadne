@@ -14,7 +14,8 @@ from typing import Dict, List, Optional, Any
 from abc import ABC, abstractmethod
 
 from qiskit import QuantumCircuit
-from ..route.analyze import analyze_circuit
+from ..route.analyze import analyze_circuit, is_clifford_circuit
+from ..route.mps_analyzer import should_use_mps
 from ..router import BackendType, RoutingDecision
 
 
@@ -197,6 +198,14 @@ class EnhancedQuantumRouter:
             RouterType.ACCURACY_OPTIMIZER: AccuracyOptimizerStrategy(),
             RouterType.HYBRID_ROUTER: HybridOptimizerStrategy(),
         }
+        
+        # Phase 1: Prioritized Filter Chain (Specialized Triage)
+        # Order matters: fastest/most specialized first.
+        self._specialized_filters: List[Tuple[BackendType, Any]] = [
+            (BackendType.STIM, is_clifford_circuit),
+            (BackendType.MPS, should_use_mps),
+            # Add future specialized analyzers here (e.g., Stabilizer)
+        ]
     
     def _detect_system_context(self) -> UserContext:
         """Auto-detect system context."""
@@ -219,9 +228,26 @@ class EnhancedQuantumRouter:
                              strategy: Optional[RouterType] = None) -> RoutingDecision:
         """Select optimal backend using specified strategy."""
         
+        entropy = self._calculate_entropy(circuit)
+        
+        # --- Phase 1: Prioritized Filter Chain (Specialized Triage) ---
+        for backend_type, check_func in self._specialized_filters:
+            if self._is_backend_available(backend_type) and check_func(circuit):
+                # Found a specialized, fast match. Terminate routing early.
+                return RoutingDecision(
+                    circuit_entropy=entropy,
+                    recommended_backend=backend_type,
+                    confidence_score=1.0,
+                    expected_speedup=5.0, # Assume significant speedup for specialized backends
+                    channel_capacity_match=1.0,
+                    alternatives=[]
+                )
+
+        # --- Phase 2: General Backend Scoring (Strategy Pattern) ---
         strategy = strategy or self.default_strategy
         strategy_impl = self.strategies.get(strategy, self.strategies[RouterType.HYBRID_ROUTER])
         
+        # Run full analysis only if Phase 1 failed
         analysis = analyze_circuit(circuit)
         backend_scores = {}
         
@@ -246,7 +272,6 @@ class EnhancedQuantumRouter:
         expected_speedup = optimal_score / baseline_score if baseline_score > 0 else 1.0
         
         confidence = 0.9 if not alternatives else min(1.0, 0.5 + (optimal_score - alternatives[0][1]) / 10.0)
-        entropy = self._calculate_entropy(circuit)
         
         return RoutingDecision(
             circuit_entropy=entropy,

@@ -14,8 +14,10 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 
-from .backends.tensor_network_backend import TensorNetworkBackend
+from .backends.mps_backend import MPSBackend
 from .route.analyze import analyze_circuit, should_use_tensor_network
+from .route.mps_analyzer import should_use_mps
+from .route.enhanced_router import EnhancedQuantumRouter, RouterType
 
 try:  # pragma: no cover - import guard for optional CUDA support
     from .backends.cuda_backend import CUDABackend, is_cuda_available
@@ -42,6 +44,7 @@ class BackendType(Enum):
     JAX_METAL = "jax_metal"
     DDSIM = "ddsim"
     CUDA = "cuda"
+    MPS = "mps"
 
 
 @dataclass
@@ -130,6 +133,12 @@ class QuantumRouter:
                 memory_efficiency=0.9,
                 apple_silicon_boost=1.0,
             ),
+            BackendType.MPS: BackendCapacity(
+                clifford_capacity=5.0, # Not specialized for Clifford, but handles general circuits
+                general_capacity=8.5, # High general capacity for suitable circuits
+                memory_efficiency=1.0, # Excellent memory efficiency
+                apple_silicon_boost=1.0,
+            ),
         }
 
     # ------------------------------------------------------------------
@@ -194,48 +203,20 @@ class QuantumRouter:
         return float(max(0.0, min(base_match, 1.0)))
 
     def select_optimal_backend(self, circuit: QuantumCircuit) -> RoutingDecision:
-        """Choose the most suitable backend for ``circuit``."""
-
-        entropy = self.circuit_entropy(circuit)
-
-        backend_scores: dict[BackendType, float] = {}
-        for backend in BackendType:
-            backend_scores[backend] = self.channel_capacity_match(circuit, backend)
-
-        optimal_backend = max(
-            backend_scores.keys(), key=lambda key: backend_scores[key]
-        )
-        optimal_score = backend_scores[optimal_backend]
-
-        # Fall back to Qiskit when every backend is scored at zero.
-        if optimal_score == 0.0:
-            optimal_backend = BackendType.QISKIT
-            optimal_score = backend_scores[BackendType.QISKIT]
-
-        alternatives = [
-            (backend, score)
-            for backend, score in backend_scores.items()
-            if backend != optimal_backend and score >= optimal_score * 0.8
-        ]
-        alternatives.sort(key=lambda item: item[1], reverse=True)
-
-        baseline = backend_scores.get(BackendType.QISKIT, 0.0)
-        expected_speedup = optimal_score / baseline if baseline > 0 else 1.0
-
-        if alternatives:
-            confidence = optimal_score / max(alternatives[0][1], 1e-9)
-        else:
-            confidence = 1.0
-
-        decision = RoutingDecision(
-            circuit_entropy=entropy,
-            recommended_backend=optimal_backend,
-            confidence_score=min(confidence, 1.0),
-            expected_speedup=max(expected_speedup, 1.0),
-            channel_capacity_match=optimal_score,
-            alternatives=alternatives,
-        )
-
+        """
+        Choose the most suitable backend for ``circuit``.
+        
+        Delegates routing decision to the EnhancedQuantumRouter for prioritized analysis.
+        """
+        
+        # Initialize Enhanced Router (or use a cached instance if available)
+        # Note: We instantiate it here to ensure it uses the latest system context,
+        # but a production system might cache this instance.
+        enhanced_router = EnhancedQuantumRouter()
+        
+        # We use the default Hybrid strategy for compatibility with the old router's behavior.
+        decision = enhanced_router.select_optimal_backend(circuit, strategy=RouterType.HYBRID_ROUTER)
+        
         return decision
 
     # ------------------------------------------------------------------
@@ -268,6 +249,8 @@ class QuantumRouter:
                 counts = self._simulate_jax_metal(circuit, shots)
             elif backend == BackendType.DDSIM:
                 counts = self._simulate_ddsim(circuit, shots)
+            elif backend == BackendType.MPS:
+                counts = self._simulate_mps(circuit, shots)
             else:
                 counts = self._simulate_cuda(circuit, shots)
         except Exception as exc:
@@ -394,6 +377,16 @@ class QuantumRouter:
             raise RuntimeError("CUDA runtime not available")
 
         backend = CUDABackend()
+        return backend.simulate(circuit, shots)
+
+    def _simulate_mps(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
+        """Simulate ``circuit`` using the Matrix Product State backend."""
+        try:
+            from .backends.mps_backend import MPSBackend
+        except ImportError as exc:
+            raise RuntimeError("MPS backend dependencies not available") from exc
+
+        backend = MPSBackend()
         return backend.simulate(circuit, shots)
 
     def _simulate_metal(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:

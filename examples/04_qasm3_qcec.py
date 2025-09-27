@@ -3,7 +3,7 @@ from __future__ import annotations
 from qiskit import QuantumCircuit
 from qiskit.qasm3 import dumps as qasm3_dumps, loads as qasm3_loads
 
-from ariadne_mac.verify.qcec import counterexample_dump, assert_equiv
+from ariadne.verify.qcec import assert_equiv
 from examples._util import write_report
 
 
@@ -35,12 +35,11 @@ def main() -> None:
         ok = True
     except Exception:
         pass
-    dump = counterexample_dump(circ, circ_back)
     report = f"""
-# QASM3 + QCEC
+# QASM3 + QCEC Equivalence Check
 
 - Equivalent: {ok}
-- QCEC: {dump}
+- Method: assert_equiv (Statevector + MQT.QCEC if available)
 """
     path = write_report("04_qasm3_qcec", report)
     print(f"Wrote report to {path}")

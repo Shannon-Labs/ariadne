@@ -4,7 +4,7 @@ from examples._util import write_report
 
 
 def main() -> None:
-    from ariadne_mac.ft.resource_estimator import azure_estimate_table
+    from ariadne.ft.resource_estimator import azure_estimate_table
 
     table = azure_estimate_table("path/to/program")
     lines = ["# Azure Resource Estimates\n", "(If Azure not configured, showing 'unavailable' records)\n"]
