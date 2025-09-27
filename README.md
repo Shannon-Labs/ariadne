@@ -2,9 +2,7 @@
 
 # Ariadne
 
-### Take Agency Back from the Agents
-
-**Intelligent Quantum Circuit Routing • No ML, Just Math**
+**Intelligent Quantum Circuit Routing**
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -14,7 +12,7 @@
 
 </div>
 
-Ariadne is a mathematically rigorous quantum circuit router that analyzes your circuits and automatically routes them to the most performant simulator backend. Following the "No ML, just math" philosophy, the routing stack has been streamlined, eliminating complex wrappers like `QuantumRouter` and removing all simulated timing logic and ML components. This ensures deterministic, auditable decisions based purely on circuit properties and refactored calibration constants.
+Ariadne is a quantum circuit router that analyzes your circuits and automatically routes them to the most performant simulator backend. The routing stack is streamlined, eliminating complex wrappers like `QuantumRouter` and removing simulated timing logic. This ensures deterministic, auditable decisions based purely on circuit properties and refactored calibration constants.
 
 [📚 Documentation Site](https://shannon-labs.github.io/ariadne) • [📖 Local Docs](docs/README.md) • [💡 Examples](examples/README.md) • [🚀 Getting Started](#-getting-started) • [📊 Benchmarks](#-benchmarks) • [🤝 Contributing](#-contributing)
 
