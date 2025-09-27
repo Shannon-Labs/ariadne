@@ -18,6 +18,46 @@ import numpy as np
 from qiskit import QuantumCircuit
 
 
+# --- Calibration Constants ---
+# General System Parameters
+RECALIBRATION_FREQUENCY = 10
+MIN_MEASUREMENTS_FOR_CALIBRATION = 3
+MIN_CONFIDENCE_THRESHOLD = 0.3
+CIRCUIT_HASH_LENGTH = 16
+CALIBRATION_VERSION = "1.0"
+
+# Confidence Calculation Parameters
+FULL_CONFIDENCE_MEASUREMENT_COUNT = 20.0
+CONFIDENCE_COUNT_WEIGHT = 0.7
+CONFIDENCE_SUCCESS_RATE_WEIGHT = 0.3
+
+# Capacity Calculation Parameters (Clifford Circuits)
+CLIFFORD_DEFAULT_CAPACITY = 8.0
+CLIFFORD_BASELINE_TIME_S = 0.1  # Target time for a standard Clifford circuit
+CLIFFORD_MIN_CAPACITY = 1.0
+CLIFFORD_SCALING_FACTOR = 10.0
+CLIFFORD_MAX_CAPACITY = 20.0
+
+# Capacity Calculation Parameters (General Circuits)
+GENERAL_DEFAULT_CAPACITY = 10.0
+GENERAL_BASELINE_TIME_S = 0.2  # Target time for a standard general circuit
+GENERAL_MIN_CAPACITY = 1.0
+GENERAL_SCALING_FACTOR = 12.0
+GENERAL_MAX_CAPACITY = 25.0
+
+# Memory Efficiency Parameters
+MEMORY_DEFAULT_EFFICIENCY = 0.8
+MEMORY_AMPLITUDE_BYTES = 8  # 8 bytes per complex amplitude (64-bit float real + 64-bit float imaginary)
+BYTES_TO_MB_DIVISOR = 1024 * 1024
+MEMORY_MIN_USAGE_THRESHOLD = 1.0
+MEMORY_MAX_EFFICIENCY = 1.0
+
+# Platform Boost Parameters
+PLATFORM_BOOST_MIN = 1.0
+PLATFORM_BOOST_SCALING_FACTOR = 2.0
+PLATFORM_BOOST_MAX = 2.5
+
+
 @dataclass
 class PerformanceMeasurement:
     """Single performance measurement for a backend."""
@@ -117,14 +157,14 @@ class BackendCalibrator:
         self.backend_profiles[backend_name].last_updated = time.time()
         
         # Trigger recalibration if enough new data
-        if len(self.measurements) % 10 == 0:  # Recalibrate every 10 measurements
+        if len(self.measurements) % RECALIBRATION_FREQUENCY == 0:  # Recalibrate every RECALIBRATION_FREQUENCY measurements
             self.recalibrate_all()
     
     def recalibrate_all(self) -> None:
         """Recalibrate all backend capacities based on measurements."""
         
         for backend_name, profile in self.backend_profiles.items():
-            if len(profile.measurements) < 3:
+            if len(profile.measurements) < MIN_MEASUREMENTS_FOR_CALIBRATION:
                 continue  # Need minimum measurements for calibration
             
             # Calculate performance metrics
@@ -155,15 +195,15 @@ class BackendCalibrator:
         ]
         
         if not clifford_times:
-            return 8.0  # Default capacity
+            return CLIFFORD_DEFAULT_CAPACITY  # Default capacity
         
         # Higher capacity = lower execution time (better performance)
         avg_time = np.mean(clifford_times)
-        baseline_time = 0.1  # 100ms baseline
+        baseline_time = CLIFFORD_BASELINE_TIME_S  # Baseline time for Clifford circuits
         
         # Scale capacity: faster execution = higher capacity
-        capacity = max(1.0, baseline_time / avg_time * 10.0)
-        return min(20.0, capacity)  # Cap at reasonable maximum
+        capacity = max(CLIFFORD_MIN_CAPACITY, baseline_time / avg_time * CLIFFORD_SCALING_FACTOR)
+        return min(CLIFFORD_MAX_CAPACITY, capacity)  # Cap at reasonable maximum
     
     def _calculate_general_capacity(self, measurements: List[PerformanceMeasurement]) -> float:
         """Calculate calibrated general circuit capacity."""
@@ -173,13 +213,13 @@ class BackendCalibrator:
         ]
         
         if not general_times:
-            return 10.0  # Default capacity
+            return GENERAL_DEFAULT_CAPACITY  # Default capacity
         
         avg_time = np.mean(general_times)
-        baseline_time = 0.2  # 200ms baseline for general circuits
+        baseline_time = GENERAL_BASELINE_TIME_S  # Baseline time for general circuits
         
-        capacity = max(1.0, baseline_time / avg_time * 12.0)
-        return min(25.0, capacity)
+        capacity = max(GENERAL_MIN_CAPACITY, baseline_time / avg_time * GENERAL_SCALING_FACTOR)
+        return min(GENERAL_MAX_CAPACITY, capacity)
     
     def _calculate_memory_efficiency(self, measurements: List[PerformanceMeasurement]) -> float:
         """Calculate memory efficiency score."""
@@ -189,7 +229,7 @@ class BackendCalibrator:
         ]
         
         if not memory_usages:
-            return 0.8  # Default efficiency
+            return MEMORY_DEFAULT_EFFICIENCY  # Default efficiency
         
         # Qubit scaling analysis
         qubit_counts = [
@@ -197,8 +237,8 @@ class BackendCalibrator:
             if m.memory_usage_mb > 0 and m.success
         ]
         
-        if len(memory_usages) < 2:
-            return 0.8
+        if len(memory_usages) < MIN_MEASUREMENTS_FOR_CALIBRATION - 1: # Requires at least 2 measurements for scaling analysis
+            return MEMORY_DEFAULT_EFFICIENCY
         
         # Fit memory scaling: memory ~ 2^qubits
         try:
@@ -206,16 +246,16 @@ class BackendCalibrator:
             efficiency_scores = []
             for mem, qubits in zip(memory_usages, qubit_counts):
                 if qubits > 0:
-                    expected_mem = 8 * (2 ** qubits) / (1024 * 1024)  # 8 bytes per amplitude
-                    efficiency = expected_mem / max(mem, 1.0)
-                    efficiency_scores.append(min(1.0, efficiency))
+                    expected_mem = MEMORY_AMPLITUDE_BYTES * (2 ** qubits) / BYTES_TO_MB_DIVISOR  # Bytes per amplitude / MB conversion
+                    efficiency = expected_mem / max(mem, MEMORY_MIN_USAGE_THRESHOLD)
+                    efficiency_scores.append(min(MEMORY_MAX_EFFICIENCY, efficiency))
             
             if efficiency_scores:
                 return np.mean(efficiency_scores)
         except:
             pass
         
-        return 0.8
+        return MEMORY_DEFAULT_EFFICIENCY
     
     def _calculate_platform_boost(self, measurements: List[PerformanceMeasurement]) -> float:
         """Calculate platform-specific performance boost."""
@@ -224,8 +264,8 @@ class BackendCalibrator:
         
         times = [m.execution_time for m in measurements if m.success and m.execution_time > 0]
         
-        if len(times) < 3:
-            return 1.0  # No boost if insufficient data
+        if len(times) < MIN_MEASUREMENTS_FOR_CALIBRATION:
+            return PLATFORM_BOOST_MIN  # No boost if insufficient data
         
         # Lower variance suggests more consistent (optimized) performance
         time_std = np.std(times)
@@ -234,10 +274,10 @@ class BackendCalibrator:
         if time_mean > 0:
             cv = time_std / time_mean  # Coefficient of variation
             # Lower CV = more consistent = better optimization
-            boost = max(1.0, 2.0 - cv)
-            return min(2.5, boost)
+            boost = max(PLATFORM_BOOST_MIN, PLATFORM_BOOST_SCALING_FACTOR - cv)
+            return min(PLATFORM_BOOST_MAX, boost)
         
-        return 1.0
+        return PLATFORM_BOOST_MIN
     
     def _calculate_confidence(self, measurements: List[PerformanceMeasurement]) -> float:
         """Calculate confidence score for calibration."""
@@ -245,9 +285,9 @@ class BackendCalibrator:
         success_rate = sum(1 for m in measurements if m.success) / max(count, 1)
         
         # Confidence increases with more measurements and higher success rate
-        count_confidence = min(1.0, count / 20.0)  # Full confidence at 20+ measurements
+        count_confidence = min(MEMORY_MAX_EFFICIENCY, count / FULL_CONFIDENCE_MEASUREMENT_COUNT)  # Full confidence at FULL_CONFIDENCE_MEASUREMENT_COUNT+ measurements
         
-        return (count_confidence * 0.7 + success_rate * 0.3)
+        return (count_confidence * CONFIDENCE_COUNT_WEIGHT + success_rate * CONFIDENCE_SUCCESS_RATE_WEIGHT)
     
     def _hash_circuit(self, circuit: QuantumCircuit) -> str:
         """Generate hash for circuit to enable deduplication."""
@@ -259,13 +299,13 @@ class BackendCalibrator:
             qubit_indices = [circuit.find_bit(q).index for q in qubits]
             circuit_str += f"{instruction.name}-{qubit_indices};"
         
-        return hashlib.md5(circuit_str.encode()).hexdigest()[:16]
+        return hashlib.md5(circuit_str.encode()).hexdigest()[:CIRCUIT_HASH_LENGTH]
     
     def get_calibrated_capacities(self, backend_name: str) -> Optional[Dict[str, float]]:
         """Get calibrated capacities for a specific backend."""
         if backend_name in self.backend_profiles:
             profile = self.backend_profiles[backend_name]
-            if profile.confidence_score > 0.3:  # Minimum confidence threshold
+            if profile.confidence_score > MIN_CONFIDENCE_THRESHOLD:  # Minimum confidence threshold
                 return profile.calibrated_capacities.copy()
         
         return None
@@ -276,11 +316,11 @@ class BackendCalibrator:
             # Prepare calibration data
             calibrated_capacities = {}
             for name, profile in self.backend_profiles.items():
-                if profile.confidence_score > 0.3:
+                if profile.confidence_score > MIN_CONFIDENCE_THRESHOLD:
                     calibrated_capacities[name] = profile.calibrated_capacities
             
             calibration_data = CalibrationData(
-                version="1.0",
+                version=CALIBRATION_VERSION,
                 created_timestamp=getattr(self.calibration_data, 'created_timestamp', time.time()),
                 last_updated=time.time(),
                 backend_profiles=self.backend_profiles,

@@ -23,7 +23,7 @@ import numpy as np
 from qiskit import QuantumCircuit
 
 # Import Ariadne components
-from .router import QuantumRouter, BackendType
+from .router import BackendType
 from .simulation import QuantumSimulator, SimulationOptions
 from .config import get_config
 from .visualization import ResultVisualizer, VisualizationConfig

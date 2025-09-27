@@ -95,18 +95,37 @@ class CUDAKernels:
                 int target_mask = 1 << target_qubit;
                 int both_mask = control_mask | target_mask;
                 
-                // Extract bits excluding control and target
-                int remaining_bits = idx;
-                int state_base = 0;
+                // Optimized index calculation for state_base (s00 index)
+                // This replaces the slow loop by using bit manipulation to insert
+                // two zero bits at the control and target qubit positions.
+                int q_a = (control_qubit < target_qubit) ? control_qubit : target_qubit;
+                int q_b = (control_qubit > target_qubit) ? control_qubit : target_qubit;
+
+                // 1. Low part: bits < q_a
+                int low_mask = (1 << q_a) - 1;
+                int low_bits = idx & low_mask;
+
+                // 2. Mid part: bits between q_a and q_b
+                // The mid bits start at position q_a in idx.
+                int mid_shift_in_idx = q_a;
+                int mid_bit_count = q_b - q_a - 1;
                 
-                for (int i = 0; i < n_qubits; i++) {
-                    if (i != control_qubit && i != target_qubit) {
-                        if (remaining_bits & 1) {
-                            state_base |= (1 << i);
-                        }
-                        remaining_bits >>= 1;
-                    }
-                }
+                // mid_mask_in_idx is a mask of mid_bit_count ones
+                int mid_mask_in_idx = (1 << mid_bit_count) - 1;
+                int mid_bits_in_idx = (idx >> mid_shift_in_idx) & mid_mask_in_idx;
+                
+                // Shift mid bits to their position in state_base (skip q_a)
+                int mid_bits_shifted = mid_bits_in_idx << (q_a + 1);
+
+                // 3. High part: bits > q_b
+                // The high bits start at position q_b - 1 in idx.
+                int high_shift_in_idx = q_b - 1;
+                int high_bits_in_idx = idx >> high_shift_in_idx;
+                
+                // Shift high bits to their position in state_base (skip q_a and q_b)
+                int high_bits_shifted = high_bits_in_idx << (q_b + 1);
+
+                int state_base = low_bits | mid_bits_shifted | high_bits_shifted;
                 
                 // Four computational basis states
                 int s00 = state_base;

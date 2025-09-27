@@ -403,6 +403,25 @@ class CUDABackend:
         max_qubits = int(math.log2(max_amplitudes))
         return min(max_qubits, 30)  # Cap at 30 qubits for safety
     
+    def _calculate_launch_config(self, state_size: int) -> tuple[int, int]:
+        """
+        Dynamically calculate optimal CUDA kernel launch configuration (grid, block).
+        
+        Aims to maximize GPU occupancy by using a fixed optimal block size 
+        and calculating the required grid size based on the state vector size.
+        """
+        # Optimal block size, typically a multiple of 32, e.g., 512 or 1024.
+        BLOCK_SIZE = 512
+        
+        # Calculate required grid size (number of blocks)
+        # Grid size = ceil(state_size / BLOCK_SIZE)
+        grid_size = (state_size + BLOCK_SIZE - 1) // BLOCK_SIZE
+        
+        # Ensure grid size is at least 1
+        grid_size = max(1, grid_size)
+        
+        return grid_size, BLOCK_SIZE
+
     def _create_sparse_state(self, num_qubits: int) -> Any:
         """Create sparse state representation for very large quantum states."""
         if self._mode == "cuda":
@@ -474,11 +493,15 @@ class CUDABackend:
         
         # Use custom kernels if available for better memory efficiency
         if self.custom_kernels and self.custom_kernels.is_available:
+            # Calculate dynamic launch configuration based on state size
+            state_size = state.shape[0]
+            grid, block = self._calculate_launch_config(state_size)
+
             if len(qubits) == 1:
-                result = self.custom_kernels.apply_single_qubit_gate(state, matrix, qubits[0])
+                result = self.custom_kernels.apply_single_qubit_gate(grid, block, state, matrix, qubits[0])
                 state[:] = result
             elif len(qubits) == 2:
-                result = self.custom_kernels.apply_two_qubit_gate(state, matrix, qubits[0], qubits[1])
+                result = self.custom_kernels.apply_two_qubit_gate(grid, block, state, matrix, qubits[0], qubits[1])
                 state[:] = result
             else:
                 # Fallback to standard method for multi-qubit gates

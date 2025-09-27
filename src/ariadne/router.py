@@ -15,6 +15,7 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 
 from .backends.mps_backend import MPSBackend
+from .backends.tensor_network_backend import TensorNetworkBackend
 from .route.analyze import analyze_circuit, should_use_tensor_network
 from .route.mps_analyzer import should_use_mps
 from .route.enhanced_router import EnhancedQuantumRouter, RouterType
@@ -59,7 +60,7 @@ class BackendCapacity:
 
 @dataclass
 class RoutingDecision:
-    """Information returned by :meth:`QuantumRouter.select_optimal_backend`."""
+    """Information returned by the routing mechanism."""
 
     circuit_entropy: float
     recommended_backend: BackendType
@@ -82,360 +83,237 @@ class SimulationResult:
     warnings: list[str] | None = None   # Any warnings during execution
 
 
-class QuantumRouter:
-    """Analyse a circuit and execute it on a suitable backend."""
+# Global state for Tensor Network Backend instance
+_TENSOR_BACKEND: TensorNetworkBackend | None = None
 
-    def __init__(self) -> None:
-        self._cuda_available = is_cuda_available()
-        self._metal_available = is_metal_available()
-        self._tensor_backend: TensorNetworkBackend | None = None
-        
-        # Set up logging
-        logger = logging.getLogger(__name__)
-        logger.debug(f"Router initialized: CUDA available: {self._cuda_available}, Metal available: {self._metal_available}")
+# ------------------------------------------------------------------
+# Analysis helpers
 
-        self.backend_capacities: dict[BackendType, BackendCapacity] = {
-            BackendType.STIM: BackendCapacity(
-                clifford_capacity=float("inf"),
-                general_capacity=0.0,
-                memory_efficiency=1.0,
-                apple_silicon_boost=1.0,
-            ),
-            BackendType.QISKIT: BackendCapacity(
-                clifford_capacity=6.0,
-                general_capacity=8.0,
-                memory_efficiency=0.6,
-                apple_silicon_boost=1.0,
-            ),
-            BackendType.TENSOR_NETWORK: BackendCapacity(
-                clifford_capacity=5.0,
-                general_capacity=9.0,
-                memory_efficiency=0.9,
-                apple_silicon_boost=1.0,
-            ),
-            BackendType.JAX_METAL: BackendCapacity(
-                # More conservative capacity estimates based on actual performance
-                clifford_capacity=7.0 if self._metal_available else 0.0,
-                general_capacity=7.5 if self._metal_available else 0.0,
-                memory_efficiency=0.8,
-                # Reduce boost factor to reflect actual 1.16-1.51x performance
-                apple_silicon_boost=1.5,
-            ),
-            BackendType.DDSIM: BackendCapacity(
-                clifford_capacity=7.0,
-                general_capacity=7.0,
-                memory_efficiency=0.8,
-                apple_silicon_boost=1.0,
-            ),
-            BackendType.CUDA: BackendCapacity(
-                clifford_capacity=9.0 if self._cuda_available else 0.0,
-                general_capacity=10.0 if self._cuda_available else 0.0,
-                memory_efficiency=0.9,
-                apple_silicon_boost=1.0,
-            ),
-            BackendType.MPS: BackendCapacity(
-                clifford_capacity=5.0, # Not specialized for Clifford, but handles general circuits
-                general_capacity=8.5, # High general capacity for suitable circuits
-                memory_efficiency=1.0, # Excellent memory efficiency
-                apple_silicon_boost=1.0,
-            ),
-        }
+def _apple_silicon_boost() -> float:
+    import platform
 
-    # ------------------------------------------------------------------
-    # Analysis helpers
+    if platform.system() == "Darwin" and platform.machine() in {"arm", "arm64"}:
+        # More realistic boost factor based on actual benchmarks
+        return 1.5
+    return 1.0
 
-    def circuit_entropy(self, circuit: QuantumCircuit) -> float:
-        """Return a Shannon-style entropy estimate for the circuit."""
+# ------------------------------------------------------------------
+# Simulation helpers
 
-        gate_counts: dict[str, int] = {}
-        total_gates = 0
+def _simulate_stim(circuit: QuantumCircuit, shots: int) -> dict[str, int]:
+    try:
+        from .converters import convert_qiskit_to_stim, simulate_stim_circuit
+    except ImportError as exc:
+        raise RuntimeError("Stim is not installed") from exc
 
-        for instruction, _, _ in circuit.data:
-            name = instruction.name
-            if name in {"measure", "barrier", "delay"}:
-                continue
-            gate_counts[name] = gate_counts.get(name, 0) + 1
-            total_gates += 1
+    stim_circuit, measurement_map = convert_qiskit_to_stim(circuit)
+    num_clbits = circuit.num_clbits or circuit.num_qubits
+    return simulate_stim_circuit(stim_circuit, measurement_map, shots, num_clbits)
 
-        if total_gates == 0:
-            return 0.0
+def _simulate_qiskit(circuit: QuantumCircuit, shots: int) -> dict[str, int]:
+    try:
+        from qiskit.providers.basic_provider import BasicProvider
+    except ImportError as exc:  # pragma: no cover - depends on qiskit extras
+        raise RuntimeError("Qiskit provider not available") from exc
 
-        entropy = 0.0
-        for count in gate_counts.values():
-            probability = count / total_gates
-            entropy -= probability * math.log2(probability)
+    provider = BasicProvider()
+    backend = provider.get_backend("basic_simulator")
+    job = backend.run(circuit, shots=shots)
+    counts = job.result().get_counts()
+    return {str(key): value for key, value in counts.items()}
 
-        return entropy
+def _real_tensor_network_simulation(
+    circuit: QuantumCircuit, shots: int
+) -> dict[str, int]:
+    global _TENSOR_BACKEND
+    if _TENSOR_BACKEND is None:
+        _TENSOR_BACKEND = TensorNetworkBackend()
+    return _TENSOR_BACKEND.simulate(circuit, shots)
 
-    def channel_capacity_match(
-        self, circuit: QuantumCircuit, backend: BackendType
-    ) -> float:
-        """Score how well the circuit maps to the backend's strengths."""
+def _simulate_tensor_network(circuit: QuantumCircuit, shots: int) -> dict[str, int]:
+    """Simulate ``circuit`` using the tensor network backend."""
 
-        capacity = self.backend_capacities[backend]
-        analysis = analyze_circuit(circuit)
-
-        if backend == BackendType.CUDA and not self._cuda_available:
-            return 0.0
-
-        if backend == BackendType.JAX_METAL and not self._metal_available:
-            return 0.0
-
-        if backend == BackendType.TENSOR_NETWORK and not should_use_tensor_network(
-            circuit, analysis
-        ):
-            return 0.0
-
-        if analysis["is_clifford"]:
-            base_match = capacity.clifford_capacity
-        else:
-            base_match = capacity.general_capacity
-
-        # Normalise the score to [0, 1].
-        base_match = min(1.0, base_match / 10.0)
-
-        if analysis["num_qubits"] > 20:
-            base_match *= capacity.memory_efficiency
-
-        if backend == BackendType.JAX_METAL:
-            base_match *= self._apple_silicon_boost()
-
-        return float(max(0.0, min(base_match, 1.0)))
-
-    def select_optimal_backend(self, circuit: QuantumCircuit) -> RoutingDecision:
-        """
-        Choose the most suitable backend for ``circuit``.
-        
-        Delegates routing decision to the EnhancedQuantumRouter for prioritized analysis.
-        """
-        
-        # Initialize Enhanced Router (or use a cached instance if available)
-        # Note: We instantiate it here to ensure it uses the latest system context,
-        # but a production system might cache this instance.
-        enhanced_router = EnhancedQuantumRouter()
-        
-        # We use the default Hybrid strategy for compatibility with the old router's behavior.
-        decision = enhanced_router.select_optimal_backend(circuit, strategy=RouterType.HYBRID_ROUTER)
-        
-        return decision
-
-    # ------------------------------------------------------------------
-    # Execution helpers
-
-    def simulate(self, circuit: QuantumCircuit, shots: int = 1024) -> SimulationResult:
-        """Simulate ``circuit`` using the selected backend."""
-
-        routing_decision = self.select_optimal_backend(circuit)
-        backend = routing_decision.recommended_backend
-        
-        # Initialize result tracking
-        fallback_reason = None
-        warnings_list = []
-        
-        # Set up logging for backend selection
-        logger = logging.getLogger(__name__)
-        logger.debug(f"Selected backend: {backend.value} (confidence: {routing_decision.confidence_score:.3f})")
-
-        start = perf_counter()
-
-        try:
-            if backend == BackendType.STIM:
-                counts = self._simulate_stim(circuit, shots)
-            elif backend == BackendType.QISKIT:
-                counts = self._simulate_qiskit(circuit, shots)
-            elif backend == BackendType.TENSOR_NETWORK:
-                counts = self._simulate_tensor_network(circuit, shots)
-            elif backend == BackendType.JAX_METAL:
-                counts = self._simulate_jax_metal(circuit, shots)
-            elif backend == BackendType.DDSIM:
-                counts = self._simulate_ddsim(circuit, shots)
-            elif backend == BackendType.MPS:
-                counts = self._simulate_mps(circuit, shots)
-            else:
-                counts = self._simulate_cuda(circuit, shots)
-        except Exception as exc:
-            # Log the specific failure for debugging
-            logger.warning(f"Backend {backend.value} failed: {exc}. Falling back to Qiskit.")
-            fallback_reason = f"Backend {backend.value} failed: {str(exc)}"
-            
-            # Attempt fallback to Qiskit
-            try:
-                counts = self._simulate_qiskit(circuit, shots)
-                backend = BackendType.QISKIT
-            except Exception as qiskit_exc:
-                # Last resort: log and re-raise the original exception
-                logger.error(f"Qiskit fallback also failed: {qiskit_exc}")
-                raise RuntimeError(
-                    f"All backends failed. Original error: {exc}. Qiskit fallback error: {qiskit_exc}"
-                ) from exc
-
-        elapsed = perf_counter() - start
-        
-        # Check for experimental backend warnings
-        if backend == BackendType.JAX_METAL:
-            warnings_list.append("JAX-Metal support is experimental and may show warnings")
-        elif backend == BackendType.CUDA and not self._cuda_available:
-            warnings_list.append("CUDA backend selected but CUDA not available")
-
-        return SimulationResult(
-            counts=counts,
-            backend_used=backend,
-            execution_time=elapsed,
-            routing_decision=routing_decision,
-            metadata={"shots": shots},
-            fallback_reason=fallback_reason,
-            warnings=warnings_list if warnings_list else None
+    try:
+        return _real_tensor_network_simulation(circuit, shots)
+    except ImportError as exc:
+        raise RuntimeError(
+            "Tensor network dependencies are not installed"
+        ) from exc
+    except Exception as exc:  # pragma: no cover - graceful fallback path
+        warnings.warn(
+            f"Tensor network simulation failed, falling back to Qiskit: {exc}",
+            RuntimeWarning,
         )
+        return _simulate_qiskit(circuit, shots)
 
-    def _simulate_stim(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
-        try:
-            from .converters import convert_qiskit_to_stim, simulate_stim_circuit
-        except ImportError as exc:
-            raise RuntimeError("Stim is not installed") from exc
+def _simulate_jax_metal(circuit: QuantumCircuit, shots: int) -> dict[str, int]:
+    """Simulate using the new hybrid Metal backend for Apple Silicon."""
+    logger = logging.getLogger(__name__)
+    
+    try:
+        from .backends.metal_backend import MetalBackend
 
-        stim_circuit, measurement_map = convert_qiskit_to_stim(circuit)
-        num_clbits = circuit.num_clbits or circuit.num_qubits
-        return simulate_stim_circuit(stim_circuit, measurement_map, shots, num_clbits)
-
-    def _simulate_qiskit(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
-        try:
-            from qiskit.providers.basic_provider import BasicProvider
-        except ImportError as exc:  # pragma: no cover - depends on qiskit extras
-            raise RuntimeError("Qiskit provider not available") from exc
-
-        provider = BasicProvider()
-        backend = provider.get_backend("basic_simulator")
-        job = backend.run(circuit, shots=shots)
-        counts = job.result().get_counts()
-        return {str(key): value for key, value in counts.items()}
-
-    def _simulate_tensor_network(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
-        """Simulate ``circuit`` using the tensor network backend."""
-
-        try:
-            return self._real_tensor_network_simulation(circuit, shots)
-        except ImportError as exc:
-            raise RuntimeError(
-                "Tensor network dependencies are not installed"
-            ) from exc
-        except Exception as exc:  # pragma: no cover - graceful fallback path
-            warnings.warn(
-                f"Tensor network simulation failed, falling back to Qiskit: {exc}",
-                RuntimeWarning,
-            )
-            return self._simulate_qiskit(circuit, shots)
-
-    def _real_tensor_network_simulation(
-        self, circuit: QuantumCircuit, shots: int
-    ) -> dict[str, int]:
-        if self._tensor_backend is None:
-            self._tensor_backend = TensorNetworkBackend()
-        return self._tensor_backend.simulate(circuit, shots)
-
-    def _simulate_jax_metal(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
-        """Simulate using the new hybrid Metal backend for Apple Silicon."""
-        logger = logging.getLogger(__name__)
+        # Use our new MetalBackend with hybrid approach
+        backend = MetalBackend(allow_cpu_fallback=True)
+        result = backend.simulate(circuit, shots)
         
+        # Log backend mode for debugging
+        logger.debug(f"Metal backend executed in mode: {backend.backend_mode}")
+        
+        # Check if Metal actually accelerated or fell back to CPU
+        if backend.backend_mode == "cpu":
+            logger.debug("Metal backend fell back to CPU mode")
+
+        return result
+
+    except ImportError as exc:
+        logger.debug(f"MetalBackend not available: {exc}")
+        # Fallback to Qiskit if MetalBackend not available
+        raise RuntimeError("Metal backend dependencies not available") from exc
+    except Exception as exc:
+        logger.warning(f"Metal backend execution failed: {exc}")
+        # Re-raise for higher-level fallback handling
+        raise RuntimeError(f"Metal backend execution failed: {exc}") from exc
+
+def _simulate_ddsim(circuit: QuantumCircuit, shots: int) -> dict[str, int]:
+    try:
+        import mqt.ddsim as ddsim
+    except ImportError as exc:  # pragma: no cover - optional dependency
+        raise RuntimeError("MQT DDSIM not installed") from exc
+
+    simulator = ddsim.DDSIMProvider().get_backend("qasm_simulator")
+    job = simulator.run(circuit, shots=shots)
+    counts = job.result().get_counts()
+    return {str(key): value for key, value in counts.items()}
+
+def _simulate_cuda(circuit: QuantumCircuit, shots: int) -> dict[str, int]:
+    if not is_cuda_available() or CUDABackend is None:
+        raise RuntimeError("CUDA runtime not available")
+
+    backend = CUDABackend()
+    return backend.simulate(circuit, shots)
+
+def _simulate_mps(circuit: QuantumCircuit, shots: int) -> dict[str, int]:
+    """Simulate ``circuit`` using the Matrix Product State backend."""
+    try:
+        from .backends.mps_backend import MPSBackend
+    except ImportError as exc:
+        raise RuntimeError("MPS backend dependencies not available") from exc
+
+    backend = MPSBackend()
+    return backend.simulate(circuit, shots)
+
+def _simulate_metal(circuit: QuantumCircuit, shots: int) -> dict[str, int]:
+    if not is_metal_available() or MetalBackend is None:
+        raise RuntimeError("JAX with Metal support not available")
+
+    backend = MetalBackend()
+    return backend.simulate(circuit, shots)
+
+def _sample_statevector_counts(
+    circuit: QuantumCircuit, shots: int, seed: int | None = None
+) -> dict[str, int]:
+    if shots < 0:
+        raise ValueError("shots must be non-negative")
+    if shots == 0:
+        return {}
+
+    state = Statevector.from_instruction(circuit)
+    probabilities = np.abs(state.data) ** 2
+    total = probabilities.sum()
+    if total == 0.0:
+        raise RuntimeError("Statevector sampling produced invalid probabilities")
+    if not np.isclose(total, 1.0):
+        probabilities = probabilities / total
+
+    rng = np.random.default_rng(seed)
+    outcomes = rng.choice(len(probabilities), size=shots, p=probabilities)
+
+    counts: dict[str, int] = {}
+    num_qubits = circuit.num_qubits
+    for outcome in outcomes:
+        bitstring = format(int(outcome), f"0{num_qubits}b")[::-1]
+        counts[bitstring] = counts.get(bitstring, 0) + 1
+    return counts
+
+# ------------------------------------------------------------------
+# Core Execution Logic
+
+def _execute_simulation(circuit: QuantumCircuit, shots: int, routing_decision: RoutingDecision) -> SimulationResult:
+    """Execute simulation based on a routing decision, including fallback logic."""
+    
+    backend = routing_decision.recommended_backend
+    
+    # Initialize result tracking
+    fallback_reason = None
+    warnings_list = []
+    
+    # Set up logging for backend selection
+    logger = logging.getLogger(__name__)
+    logger.debug(f"Selected backend: {backend.value} (confidence: {routing_decision.confidence_score:.3f})")
+
+    start = perf_counter()
+
+    try:
+        if backend == BackendType.STIM:
+            counts = _simulate_stim(circuit, shots)
+        elif backend == BackendType.QISKIT:
+            counts = _simulate_qiskit(circuit, shots)
+        elif backend == BackendType.TENSOR_NETWORK:
+            counts = _simulate_tensor_network(circuit, shots)
+        elif backend == BackendType.JAX_METAL:
+            counts = _simulate_jax_metal(circuit, shots)
+        elif backend == BackendType.DDSIM:
+            counts = _simulate_ddsim(circuit, shots)
+        elif backend == BackendType.MPS:
+            counts = _simulate_mps(circuit, shots)
+        elif backend == BackendType.CUDA:
+            counts = _simulate_cuda(circuit, shots)
+        else:
+            # Fallback for unknown or unhandled backend types
+            counts = _simulate_qiskit(circuit, shots)
+            backend = BackendType.QISKIT
+            warnings_list.append(f"Unknown backend {backend.value} selected, falling back to Qiskit.")
+    except Exception as exc:
+        # Log the specific failure for debugging
+        logger.warning(f"Backend {backend.value} failed: {exc}. Falling back to Qiskit.")
+        fallback_reason = f"Backend {backend.value} failed: {str(exc)}"
+        
+        # Attempt fallback to Qiskit
         try:
-            from .backends.metal_backend import MetalBackend
+            counts = _simulate_qiskit(circuit, shots)
+            backend = BackendType.QISKIT
+        except Exception as qiskit_exc:
+            # Last resort: log and re-raise the original exception
+            logger.error(f"Qiskit fallback also failed: {qiskit_exc}")
+            raise RuntimeError(
+                f"All backends failed. Original error: {exc}. Qiskit fallback error: {qiskit_exc}"
+            ) from exc
 
-            # Use our new MetalBackend with hybrid approach
-            backend = MetalBackend(allow_cpu_fallback=True)
-            result = backend.simulate(circuit, shots)
-            
-            # Log backend mode for debugging
-            logger.debug(f"Metal backend executed in mode: {backend.backend_mode}")
-            
-            # Check if Metal actually accelerated or fell back to CPU
-            if backend.backend_mode == "cpu":
-                logger.debug("Metal backend fell back to CPU mode")
+    elapsed = perf_counter() - start
+    
+    # Check for experimental backend warnings
+    if backend == BackendType.JAX_METAL and is_metal_available():
+        warnings_list.append("JAX-Metal support is experimental and may show warnings")
+    elif backend == BackendType.CUDA and not is_cuda_available():
+        warnings_list.append("CUDA backend selected but CUDA not available")
 
-            return result
-
-        except ImportError as exc:
-            logger.debug(f"MetalBackend not available: {exc}")
-            # Fallback to Qiskit if MetalBackend not available
-            raise RuntimeError("Metal backend dependencies not available") from exc
-        except Exception as exc:
-            logger.warning(f"Metal backend execution failed: {exc}")
-            # Re-raise for higher-level fallback handling
-            raise RuntimeError(f"Metal backend execution failed: {exc}") from exc
-
-    def _simulate_ddsim(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
-        try:
-            import mqt.ddsim as ddsim
-        except ImportError as exc:  # pragma: no cover - optional dependency
-            raise RuntimeError("MQT DDSIM not installed") from exc
-
-        simulator = ddsim.DDSIMProvider().get_backend("qasm_simulator")
-        job = simulator.run(circuit, shots=shots)
-        counts = job.result().get_counts()
-        return {str(key): value for key, value in counts.items()}
-
-    def _simulate_cuda(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
-        if not self._cuda_available or CUDABackend is None:
-            raise RuntimeError("CUDA runtime not available")
-
-        backend = CUDABackend()
-        return backend.simulate(circuit, shots)
-
-    def _simulate_mps(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
-        """Simulate ``circuit`` using the Matrix Product State backend."""
-        try:
-            from .backends.mps_backend import MPSBackend
-        except ImportError as exc:
-            raise RuntimeError("MPS backend dependencies not available") from exc
-
-        backend = MPSBackend()
-        return backend.simulate(circuit, shots)
-
-    def _simulate_metal(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
-        if not self._metal_available or MetalBackend is None:
-            raise RuntimeError("JAX with Metal support not available")
-
-        backend = MetalBackend()
-        return backend.simulate(circuit, shots)
-
-    def _sample_statevector_counts(
-        self, circuit: QuantumCircuit, shots: int, seed: int | None = None
-    ) -> dict[str, int]:
-        if shots < 0:
-            raise ValueError("shots must be non-negative")
-        if shots == 0:
-            return {}
-
-        state = Statevector.from_instruction(circuit)
-        probabilities = np.abs(state.data) ** 2
-        total = probabilities.sum()
-        if total == 0.0:
-            raise RuntimeError("Statevector sampling produced invalid probabilities")
-        if not np.isclose(total, 1.0):
-            probabilities = probabilities / total
-
-        rng = np.random.default_rng(seed)
-        outcomes = rng.choice(len(probabilities), size=shots, p=probabilities)
-
-        counts: dict[str, int] = {}
-        num_qubits = circuit.num_qubits
-        for outcome in outcomes:
-            bitstring = format(int(outcome), f"0{num_qubits}b")[::-1]
-            counts[bitstring] = counts.get(bitstring, 0) + 1
-        return counts
-
-    @staticmethod
-    def _apple_silicon_boost() -> float:
-        import platform
-
-        if platform.system() == "Darwin" and platform.machine() in {"arm", "arm64"}:
-            # More realistic boost factor based on actual benchmarks
-            return 1.5
-        return 1.0
+    return SimulationResult(
+        counts=counts,
+        backend_used=backend,
+        execution_time=elapsed,
+        routing_decision=routing_decision,
+        metadata={"shots": shots},
+        fallback_reason=fallback_reason,
+        warnings=warnings_list if warnings_list else None
+    )
 
 
 def simulate(circuit: QuantumCircuit, shots: int = 1024, backend: str | None = None) -> SimulationResult:
     """Convenience wrapper that routes and executes ``circuit``."""
-
-    router = QuantumRouter()
+    
+    # Initialize Enhanced Router
+    enhanced_router = EnhancedQuantumRouter()
     
     if backend is not None:
         # Force specific backend
@@ -444,18 +322,17 @@ def simulate(circuit: QuantumCircuit, shots: int = 1024, backend: str | None = N
         except ValueError as exc:
             raise ValueError(f"Unknown backend: {backend}") from exc
         
-        # Create a custom router that only uses the specified backend
-        class ForcedRouter(QuantumRouter):
-            def select_optimal_backend(self, circuit: QuantumCircuit) -> RoutingDecision:
-                return RoutingDecision(
-                    circuit_entropy=0.0,
-                    recommended_backend=backend_type,
-                    confidence_score=1.0,
-                    expected_speedup=1.0,
-                    channel_capacity_match=1.0,
-                    alternatives=[]
-                )
-        
-        router = ForcedRouter()
+        # Create a forced routing decision
+        routing_decision = RoutingDecision(
+            circuit_entropy=0.0,
+            recommended_backend=backend_type,
+            confidence_score=1.0,
+            expected_speedup=1.0,
+            channel_capacity_match=1.0,
+            alternatives=[]
+        )
+    else:
+        # Use Enhanced Router for optimal selection
+        routing_decision = enhanced_router.select_optimal_backend(circuit, strategy=RouterType.HYBRID_ROUTER)
     
-    return router.simulate(circuit, shots)
+    return _execute_simulation(circuit, shots, routing_decision)

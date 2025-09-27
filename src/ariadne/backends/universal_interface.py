@@ -33,16 +33,21 @@ class BackendCapability(Enum):
 
 @dataclass
 class BackendMetrics:
-    """Performance and capability metrics for a backend."""
+    """Performance and capability metrics for a backend, including dynamic hardware metrics."""
     max_qubits: int
     typical_qubits: int
     memory_efficiency: float  # 0-1 scale
-    speed_rating: float  # 0-1 scale  
+    speed_rating: float  # 0-1 scale
     accuracy_rating: float  # 0-1 scale
-    stability_rating: float  # 0-1 scale
+    stability_rating: float  # 1-1 scale
     capabilities: List[BackendCapability]
     hardware_requirements: List[str]
     estimated_cost_factor: float  # Relative computational cost
+    
+    # Dynamic Quantum Computing Metrics
+    gate_times: Dict[str, float]  # Gate name to time in seconds (e.g., {'rz': 1e-9})
+    error_rates: Dict[str, float]  # Error type to rate (e.g., {'single_qubit': 1e-3})
+    connectivity_map: Optional[List[Tuple[int, int]]]  # List of connected qubit pairs
 
 
 @dataclass
@@ -301,7 +306,12 @@ class QulacsUniversalWrapper(UniversalBackend):
             stability_rating=0.85,
             capabilities=self.get_capabilities(),
             hardware_requirements=['CUDA' if self.backend.gpu_available else 'CPU'],
-            estimated_cost_factor=0.3 if self.backend.gpu_available else 1.0
+            estimated_cost_factor=0.3 if self.backend.gpu_available else 1.0,
+            
+            # Dynamic Metrics (Simulation Defaults)
+            gate_times={'single_qubit': 1e-9, 'two_qubit': 1e-8},
+            error_rates={'single_qubit': 1e-10, 'two_qubit': 1e-9},
+            connectivity_map=None
         )
     
     def can_simulate(self, circuit: QuantumCircuit, **kwargs) -> Tuple[bool, str]:
@@ -341,7 +351,12 @@ class PennyLaneUniversalWrapper(UniversalBackend):
             stability_rating=0.9,
             capabilities=self.get_capabilities(),
             hardware_requirements=['CPU', 'GPU (optional)'],
-            estimated_cost_factor=0.8
+            estimated_cost_factor=0.8,
+            
+            # Dynamic Metrics (Simulation Defaults)
+            gate_times={'single_qubit': 1e-9, 'two_qubit': 1e-8},
+            error_rates={'single_qubit': 1e-10, 'two_qubit': 1e-9},
+            connectivity_map=None
         )
     
     def can_simulate(self, circuit: QuantumCircuit, **kwargs) -> Tuple[bool, str]:
@@ -383,7 +398,12 @@ class CirqUniversalWrapper(UniversalBackend):
             stability_rating=0.85,
             capabilities=self.get_capabilities(),
             hardware_requirements=['CPU'],
-            estimated_cost_factor=1.2
+            estimated_cost_factor=1.2,
+            
+            # Dynamic Metrics (Simulation Defaults)
+            gate_times={'single_qubit': 5e-9, 'two_qubit': 5e-8},
+            error_rates={'single_qubit': 1e-4, 'two_qubit': 1e-3},
+            connectivity_map=None
         )
     
     def can_simulate(self, circuit: QuantumCircuit, **kwargs) -> Tuple[bool, str]:
@@ -421,7 +441,12 @@ class IntelQSUniversalWrapper(UniversalBackend):
             stability_rating=0.8,
             capabilities=self.get_capabilities(),
             hardware_requirements=['Intel CPU', 'Intel MKL (optional)'],
-            estimated_cost_factor=0.6
+            estimated_cost_factor=0.6,
+            
+            # Dynamic Metrics (Simulation Defaults)
+            gate_times={'single_qubit': 1e-9, 'two_qubit': 1e-8},
+            error_rates={'single_qubit': 1e-10, 'two_qubit': 1e-9},
+            connectivity_map=None
         )
     
     def can_simulate(self, circuit: QuantumCircuit, **kwargs) -> Tuple[bool, str]:
@@ -468,7 +493,12 @@ class QiskitUniversalWrapper(UniversalBackend):
             stability_rating=0.95,
             capabilities=self.get_capabilities(),
             hardware_requirements=['CPU'],
-            estimated_cost_factor=2.0
+            estimated_cost_factor=2.0,
+            
+            # Dynamic Metrics (Simulation Defaults)
+            gate_times={'single_qubit': 1e-8, 'two_qubit': 1e-7},
+            error_rates={'single_qubit': 1e-3, 'two_qubit': 1e-2},
+            connectivity_map=None
         )
     
     def can_simulate(self, circuit: QuantumCircuit, **kwargs) -> Tuple[bool, str]:

@@ -10,17 +10,53 @@ CLIFFORD_ONE_Q = {"i", "x", "y", "z", "h", "s", "sdg", "sx", "sxdg"}
 CLIFFORD_TWO_Q = {"cx", "cz", "swap"}
 
 
-def is_clifford_circuit(circ: QuantumCircuit) -> bool:
+def is_clifford_circuit(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> bool:
+    if properties is None:
+        # Fallback for standalone use
+        for inst, _, _ in circ.data:
+            name = inst.name
+            if name in {"measure", "barrier", "delay"}:
+                continue
+            if (name not in CLIFFORD_ONE_Q) and (name not in CLIFFORD_TWO_Q):
+                return False
+        return True
+    
+    # Optimized calculation using pre-calculated properties
+    return properties["total_gates"] == properties["clifford_gates"]
+
+
+def _get_circuit_properties(circ: QuantumCircuit) -> Dict[str, Any]:
+    properties = {
+        "total_gates": 0,
+        "two_qubit_gates": 0,
+        "parameterized_gates": 0,
+        "clifford_gates": 0,
+        "gate_counts": {},
+        "gate_types": set(),
+    }
+
     for inst, _, _ in circ.data:
         name = inst.name
         if name in {"measure", "barrier", "delay"}:
             continue
-        if (name not in CLIFFORD_ONE_Q) and (name not in CLIFFORD_TWO_Q):
-            return False
-    return True
+
+        properties["total_gates"] += 1
+        properties["gate_types"].add(name)
+        properties["gate_counts"][name] = properties["gate_counts"].get(name, 0) + 1
+
+        if inst.num_qubits == 2:
+            properties["two_qubit_gates"] += 1
+
+        if hasattr(inst, 'params') and inst.params:
+            properties["parameterized_gates"] += 1
+
+        if (name in CLIFFORD_ONE_Q) or (name in CLIFFORD_TWO_Q):
+            properties["clifford_gates"] += 1
+            
+    return properties
 
 
-def calculate_gate_entropy(circ: QuantumCircuit) -> float:
+def calculate_gate_entropy(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
     """Calculate Shannon entropy of gate distribution."""
     gate_counts = {}
     total_gates = 0
@@ -43,13 +79,12 @@ def calculate_gate_entropy(circ: QuantumCircuit) -> float:
     return entropy
 
 
-def estimate_entanglement_entropy(circ: QuantumCircuit) -> float:
+def estimate_entanglement_entropy(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
     """Estimate the entanglement entropy that will be generated."""
-    # Count two-qubit gates as entanglement generators
-    entangling_gates = 0
-    for instruction, qubits, _ in circ.data:
-        if instruction.num_qubits == 2 and instruction.name not in ['measure', 'barrier']:
-            entangling_gates += 1
+    if properties is None:
+        properties = _get_circuit_properties(circ)
+        
+    entangling_gates = properties["two_qubit_gates"]
     
     if entangling_gates == 0:
         return 0.0
@@ -69,12 +104,15 @@ def estimate_quantum_volume(circ: QuantumCircuit) -> float:
     return 2 ** m
 
 
-def calculate_parallelization_factor(circ: QuantumCircuit) -> float:
+def calculate_parallelization_factor(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
     """Calculate how much parallelization is possible."""
     if circ.depth() == 0:
         return 1.0
     
-    total_gates = sum(1 for inst, _, _ in circ.data if inst.name not in ['measure', 'barrier', 'delay'])
+    if properties is None:
+        properties = _get_circuit_properties(circ)
+        
+    total_gates = properties["total_gates"]
     
     if total_gates == 0:
         return 1.0
@@ -84,20 +122,16 @@ def calculate_parallelization_factor(circ: QuantumCircuit) -> float:
     return total_gates / circ.depth()
 
 
-def estimate_noise_susceptibility(circ: QuantumCircuit) -> float:
+def estimate_noise_susceptibility(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
     """Estimate circuit's susceptibility to noise."""
+    if properties is None:
+        properties = _get_circuit_properties(circ)
+        
+    total_gates = properties["total_gates"]
+    two_qubit_gates = properties["two_qubit_gates"]
+    
     # Factors: depth (decoherence), two-qubit gates (higher error), total operations
     depth_factor = min(1.0, circ.depth() / 100.0)  # Normalize to reasonable scale
-    
-    two_qubit_gates = sum(
-        1 for inst, _, _ in circ.data 
-        if inst.num_qubits == 2 and inst.name not in ['measure', 'barrier']
-    )
-    
-    total_gates = sum(
-        1 for inst, _, _ in circ.data 
-        if inst.name not in ['measure', 'barrier', 'delay']
-    )
     
     if total_gates == 0:
         return 0.0
@@ -109,9 +143,9 @@ def estimate_noise_susceptibility(circ: QuantumCircuit) -> float:
     return min(1.0, susceptibility)
 
 
-def estimate_classical_complexity(circ: QuantumCircuit) -> float:
+def estimate_classical_complexity(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
     """Estimate classical simulation complexity."""
-    if is_clifford_circuit(circ):
+    if is_clifford_circuit(circ, properties=properties):
         # Clifford circuits are polynomial time
         return circ.num_qubits ** 2
     
@@ -147,15 +181,13 @@ def calculate_connectivity_score(graph: nx.Graph) -> float:
     return 0.7 * density + 0.3 * clustering
 
 
-def calculate_gate_diversity(circ: QuantumCircuit) -> float:
+def calculate_gate_diversity(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
     """Calculate diversity of gate types used."""
-    gate_types = set()
-    total_gates = 0
-    
-    for instruction, _, _ in circ.data:
-        if instruction.name not in ['measure', 'barrier', 'delay']:
-            gate_types.add(instruction.name)
-            total_gates += 1
+    if properties is None:
+        properties = _get_circuit_properties(circ)
+        
+    gate_types = properties["gate_types"]
+    total_gates = properties["total_gates"]
     
     if total_gates == 0:
         return 0.0
@@ -164,34 +196,18 @@ def calculate_gate_diversity(circ: QuantumCircuit) -> float:
     return len(gate_types) / max(1, math.log2(total_gates + 1))
 
 
-def calculate_critical_path_length(circ: QuantumCircuit) -> int:
-    """Calculate the critical path length through the circuit."""
-    # This is effectively the circuit depth for quantum circuits
-    # since all operations must respect causality
-    return circ.depth()
-
-
-def calculate_expressivity(circ: QuantumCircuit) -> float:
+def calculate_expressivity(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
     """Calculate circuit expressivity measure."""
+    if properties is None:
+        properties = _get_circuit_properties(circ)
+        
+    gate_types = properties["gate_types"]
+    total_gates = properties["total_gates"]
+    entangling_gates = properties["two_qubit_gates"]
+    parameterized_gates = properties["parameterized_gates"]
+    
     # Expressivity relates to how much of Hilbert space the circuit can explore
     # Factors: gate diversity, entangling gates, parameterized gates
-    
-    gate_types = set()
-    entangling_gates = 0
-    parameterized_gates = 0
-    total_gates = 0
-    
-    for instruction, qubits, _ in circ.data:
-        if instruction.name not in ['measure', 'barrier', 'delay']:
-            gate_types.add(instruction.name)
-            total_gates += 1
-            
-            if instruction.num_qubits == 2:
-                entangling_gates += 1
-            
-            # Check for parameterized gates
-            if hasattr(instruction, 'params') and instruction.params:
-                parameterized_gates += 1
     
     if total_gates == 0:
         return 0.0
@@ -237,16 +253,13 @@ def approximate_treewidth(g: nx.Graph) -> int:
         return max((deg for _, deg in g.degree()), default=0)
 
 
-def clifford_ratio(circ: QuantumCircuit) -> float:
-    total = 0
-    cliff = 0
-    for inst, _, _ in circ.data:
-        name = inst.name
-        if name in {"measure", "barrier", "delay"}:
-            continue
-        total += 1
-        if (name in CLIFFORD_ONE_Q) or (name in CLIFFORD_TWO_Q):
-            cliff += 1
+def clifford_ratio(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
+    if properties is None:
+        properties = _get_circuit_properties(circ)
+        
+    total = properties["total_gates"]
+    cliff = properties["clifford_gates"]
+    
     return float(cliff) / float(total) if total else 1.0
 
 
@@ -274,6 +287,9 @@ def two_qubit_depth(circ: QuantumCircuit) -> int:
 
 def analyze_circuit(circ: QuantumCircuit) -> dict[str, float | int | bool]:
     """Enhanced circuit analysis with advanced entropy and complexity metrics."""
+    
+    # Perform single pass analysis to gather all gate properties
+    properties = _get_circuit_properties(circ)
     g = interaction_graph(circ)
     
     # Basic metrics
@@ -284,22 +300,21 @@ def analyze_circuit(circ: QuantumCircuit) -> dict[str, float | int | bool]:
         "edges": g.number_of_edges(),
         "treewidth_estimate": approximate_treewidth(g),
         "light_cone_width": light_cone_width_estimate(circ),
-        "clifford_ratio": clifford_ratio(circ),
-        "is_clifford": is_clifford_circuit(circ),
+        "clifford_ratio": clifford_ratio(circ, properties=properties),
+        "is_clifford": is_clifford_circuit(circ, properties=properties),
     }
     
     # Advanced entropy and complexity metrics
     advanced_metrics = {
-        "gate_entropy": calculate_gate_entropy(circ),
-        "entanglement_entropy_estimate": estimate_entanglement_entropy(circ),
+        "gate_entropy": calculate_gate_entropy(circ, properties=properties),
+        "entanglement_entropy_estimate": estimate_entanglement_entropy(circ, properties=properties),
         "quantum_volume_estimate": estimate_quantum_volume(circ),
-        "parallelization_factor": calculate_parallelization_factor(circ),
-        "noise_susceptibility": estimate_noise_susceptibility(circ),
-        "classical_simulation_complexity": estimate_classical_complexity(circ),
+        "parallelization_factor": calculate_parallelization_factor(circ, properties=properties),
+        "noise_susceptibility": estimate_noise_susceptibility(circ, properties=properties),
+        "classical_simulation_complexity": estimate_classical_complexity(circ, properties=properties),
         "connectivity_score": calculate_connectivity_score(g),
-        "gate_diversity": calculate_gate_diversity(circ),
-        "critical_path_length": calculate_critical_path_length(circ),
-        "expressivity_measure": calculate_expressivity(circ)
+        "gate_diversity": calculate_gate_diversity(circ, properties=properties),
+        "expressivity_measure": calculate_expressivity(circ, properties=properties)
     }
     
     # Combine all metrics

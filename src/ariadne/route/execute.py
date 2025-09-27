@@ -8,7 +8,7 @@ from typing import Literal
 
 from qiskit import QuantumCircuit
 
-from ..router import QuantumRouter
+from ..router import simulate as core_simulate, SimulationResult
 from .analyze import analyze_circuit
 
 Backend = Literal["stim", "tn", "sv", "dd"]
@@ -36,8 +36,7 @@ def decide_backend(circuit: QuantumCircuit) -> Backend:
 
 
 def _simulate_with_router(circuit: QuantumCircuit, shots: int) -> dict[str, object]:
-    router = QuantumRouter()
-    result = router.simulate(circuit, shots=shots)
+    result: SimulationResult = core_simulate(circuit, shots=shots)
     return {
         "counts": result.counts,
         "backend": result.backend_used.value,

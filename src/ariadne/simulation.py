@@ -19,7 +19,7 @@ import numpy as np
 from qiskit import QuantumCircuit
 
 # Import core Ariadne components
-from .router import QuantumRouter, SimulationResult, BackendType
+from .router import SimulationResult, BackendType
 from .quantum_advantage import detect_quantum_advantage
 from .ft.resource_estimator import estimate_circuit_resources, ResourceEstimate
 
@@ -157,7 +157,10 @@ class QuantumSimulator:
         """Initialize quantum simulator with configuration."""
         
         # Core router with intelligent backend selection
-        self.router = QuantumRouter(use_calibration=enable_calibration)
+        # Since QuantumRouter is removed, we rely on the top-level simulate function
+        # or an internal EnhancedQuantumRouter instance if needed for configuration.
+        # The simulate function in router.py now handles routing internally.
+        pass
         
         # Configuration
         self.config_file = config_file
@@ -338,7 +341,7 @@ class QuantumSimulator:
             'total_execution_time': self.total_execution_time,
             'average_execution_time': self.total_execution_time / max(1, self.simulation_count),
             'backend_usage': self.backend_usage,
-            'router_stats': self.router.backend_capacities,
+            'router_stats': "Router functionality consolidated into EnhancedQuantumRouter.",
             'cache_stats': self._get_cache_stats()
         }
     
@@ -382,22 +385,19 @@ class QuantumSimulator:
         """Configure router with backend preferences."""
         
         # Update router backend capacities based on preferences
-        for backend_name, backend_options in options.backend_options.items():
-            try:
-                backend_type = BackendType(backend_name)
-                if 'boost' in backend_options:
-                    self.router.update_capacity(
-                        backend_type,
-                        apple_silicon_boost=backend_options['boost']
-                    )
-            except ValueError:
-                pass  # Unknown backend
+        # This functionality is now handled by EnhancedQuantumRouter internally if needed.
+        # Since QuantumRouter is removed, we skip this direct manipulation.
+        pass
     
     def _execute_simulation(self, circuit: QuantumCircuit, options: SimulationOptions) -> SimulationResult:
         """Execute simulation with configured options."""
         
-        # Use router for intelligent backend selection
-        return self.router.simulate(circuit, shots=options.shots)
+        # Use top-level simulate function for intelligent backend selection
+        from .router import simulate as core_simulate
+        
+        backend_name = options.backend_preference[0] if options.backend_preference and options.backend_preference[0] != "auto" else None
+        
+        return core_simulate(circuit, shots=options.shots, backend=backend_name)
     
     def _execute_fallback_simulation(self, circuit: QuantumCircuit, options: SimulationOptions) -> SimulationResult:
         """Execute simulation with basic fallback."""

@@ -1,20 +1,16 @@
 """
-ML-Based Performance Prediction System
+Mathematical/Heuristic Performance Prediction System
 
-This module uses machine learning to predict quantum circuit execution performance
-across different backends, enabling intelligent routing decisions.
+This module uses mathematical models and circuit features to predict quantum circuit 
+execution performance across different backends, enabling intelligent routing decisions.
 """
 
 from __future__ import annotations
 
-import json
 import math
-import pickle
 import warnings
-from dataclasses import dataclass, asdict
-from pathlib import Path
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Any, Union
-import numpy as np
 
 from qiskit import QuantumCircuit
 
@@ -24,7 +20,7 @@ from ..router import BackendType
 
 @dataclass
 class CircuitFeatures:
-    """Extracted features from quantum circuits for ML models."""
+    """Extracted features from quantum circuits for performance models."""
     num_qubits: int
     depth: int
     gate_count: int
@@ -35,21 +31,6 @@ class CircuitFeatures:
     clifford_ratio: float
     parallelization_factor: float
     entanglement_complexity: float
-    
-    def to_vector(self) -> np.ndarray:
-        """Convert features to numpy array for ML models."""
-        return np.array([
-            self.num_qubits,
-            self.depth,
-            self.gate_count,
-            self.two_qubit_gate_count,
-            self.single_qubit_gate_count,
-            self.gate_entropy,
-            self.connectivity_index,
-            self.clifford_ratio,
-            self.parallelization_factor,
-            self.entanglement_complexity
-        ], dtype=np.float32)
 
 
 @dataclass
@@ -74,7 +55,7 @@ class PredictionResult:
 
 
 class CircuitFeatureExtractor:
-    """Extract ML-relevant features from quantum circuits."""
+    """Extract mathematical features from quantum circuits."""
     
     def extract_features(self, circuit: QuantumCircuit) -> CircuitFeatures:
         """Extract comprehensive features from a quantum circuit."""
@@ -199,8 +180,8 @@ class CircuitFeatureExtractor:
         return 1.0 - math.exp(-normalized_gates)
 
 
-class SimplePerformanceModel:
-    """Simple heuristic-based performance model (fallback when ML unavailable)."""
+class PerformanceModel:
+    """Heuristic-based performance model."""
     
     def __init__(self):
         # Empirically derived performance coefficients
@@ -288,86 +269,28 @@ class SimplePerformanceModel:
         return max(0.1, min(1.0, success_rate))
 
 
-class MLPerformanceModel:
-    """Machine learning-based performance prediction model."""
+class PerformancePredictor:
+    """Main performance prediction interface."""
     
-    def __init__(self, model_dir: Optional[Path] = None):
-        self.model_dir = model_dir or Path.home() / '.ariadne' / 'ml_models'
-        self.model_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Training data storage
-        self.training_data: Dict[BackendType, List[Tuple[CircuitFeatures, PerformanceMetrics]]] = {}
-        self.models: Dict[BackendType, Any] = {}  # Trained models
-        
-        # Fallback to simple model
-        self.simple_model = SimplePerformanceModel()
-        
-        # Load existing models
-        self._load_models()
+    def __init__(self):
+        self.feature_extractor = CircuitFeatureExtractor()
+        self.model = PerformanceModel()
     
-    def add_training_data(self, backend: BackendType, features: CircuitFeatures, 
-                         metrics: PerformanceMetrics) -> None:
-        """Add training data point."""
-        if backend not in self.training_data:
-            self.training_data[backend] = []
+    def predict_performance(self, circuit: QuantumCircuit, backend: BackendType) -> PredictionResult:
+        """Predict performance for circuit on given backend."""
+        features = self.feature_extractor.extract_features(circuit)
         
-        self.training_data[backend].append((features, metrics))
-        
-        # Auto-retrain if we have enough data
-        if len(self.training_data[backend]) % 50 == 0:  # Retrain every 50 samples
-            self._train_backend_model(backend)
-    
-    def predict_performance(self, features: CircuitFeatures, backend: BackendType) -> PredictionResult:
-        """Predict performance for given circuit features and backend."""
-        
-        # Try ML model first
-        if backend in self.models and self.models[backend] is not None:
-            try:
-                return self._predict_with_ml_model(features, backend)
-            except Exception:
-                warnings.warn(f"ML model failed for {backend.value}, using heuristic fallback")
-        
-        # Fallback to heuristic model
-        return self._predict_with_heuristic_model(features, backend)
-    
-    def _predict_with_ml_model(self, features: CircuitFeatures, backend: BackendType) -> PredictionResult:
-        """Make prediction using trained ML model."""
-        model = self.models[backend]
-        feature_vector = features.to_vector().reshape(1, -1)
-        
-        # For this implementation, we'll use a simple approach
-        # In a real implementation, you'd use sklearn, pytorch, etc.
-        predicted_time = self._simple_ml_predict(feature_vector, backend, 'time')
-        predicted_memory = self._simple_ml_predict(feature_vector, backend, 'memory')
-        predicted_success = self._simple_ml_predict(feature_vector, backend, 'success')
-        
-        return PredictionResult(
-            backend=backend,
-            predicted_time=max(0.001, predicted_time),
-            predicted_memory_mb=max(1.0, predicted_memory),
-            predicted_success_rate=max(0.1, min(1.0, predicted_success)),
-            confidence_score=0.8,  # Would be computed from model uncertainty
-            feature_importance={
-                'num_qubits': 0.3,
-                'depth': 0.2,
-                'gate_count': 0.15,
-                'entanglement_complexity': 0.2,
-                'clifford_ratio': 0.15
-            }
-        )
-    
-    def _predict_with_heuristic_model(self, features: CircuitFeatures, backend: BackendType) -> PredictionResult:
-        """Make prediction using heuristic model."""
-        predicted_time = self.simple_model.predict_execution_time(features, backend)
-        predicted_memory = self.simple_model.predict_memory_usage(features, backend)
-        predicted_success = self.simple_model.predict_success_rate(features, backend)
+        # Use the heuristic model directly
+        predicted_time = self.model.predict_execution_time(features, backend)
+        predicted_memory = self.model.predict_memory_usage(features, backend)
+        predicted_success = self.model.predict_success_rate(features, backend)
         
         return PredictionResult(
             backend=backend,
             predicted_time=predicted_time,
             predicted_memory_mb=predicted_memory,
             predicted_success_rate=predicted_success,
-            confidence_score=0.6,  # Lower confidence for heuristic
+            confidence_score=0.6,  # Confidence score for heuristic model
             feature_importance={
                 'num_qubits': 0.4,
                 'depth': 0.3,
@@ -376,118 +299,14 @@ class MLPerformanceModel:
             }
         )
     
-    def _simple_ml_predict(self, feature_vector: np.ndarray, backend: BackendType, metric: str) -> float:
-        """Simple ML prediction (placeholder for real ML implementation)."""
-        # This is a simplified placeholder - in reality you'd use proper ML libraries
-        features = feature_vector.flatten()
-        
-        if metric == 'time':
-            return self.simple_model.predict_execution_time(
-                CircuitFeatures(*features), backend
-            )
-        elif metric == 'memory':
-            return self.simple_model.predict_memory_usage(
-                CircuitFeatures(*features), backend
-            )
-        elif metric == 'success':
-            return self.simple_model.predict_success_rate(
-                CircuitFeatures(*features), backend
-            )
-        else:
-            return 1.0
-    
-    def _train_backend_model(self, backend: BackendType) -> None:
-        """Train ML model for specific backend."""
-        if backend not in self.training_data or len(self.training_data[backend]) < 10:
-            return  # Need at least 10 samples
-        
-        try:
-            # Prepare training data
-            X = []
-            y_time = []
-            y_memory = []
-            y_success = []
-            
-            for features, metrics in self.training_data[backend]:
-                X.append(features.to_vector())
-                y_time.append(metrics.execution_time)
-                y_memory.append(metrics.memory_usage_mb)
-                y_success.append(metrics.success_probability)
-            
-            X = np.array(X)
-            
-            # In a real implementation, you'd train actual ML models here
-            # For now, we'll just store the data and use heuristics
-            self.models[backend] = {
-                'X': X,
-                'y_time': np.array(y_time),
-                'y_memory': np.array(y_memory),
-                'y_success': np.array(y_success),
-                'trained': True
-            }
-            
-            # Save model
-            self._save_model(backend)
-            
-        except Exception as e:
-            warnings.warn(f"Failed to train model for {backend.value}: {e}")
-    
-    def _load_models(self) -> None:
-        """Load existing models from disk."""
-        for backend in BackendType:
-            model_file = self.model_dir / f"{backend.value}_model.pkl"
-            if model_file.exists():
-                try:
-                    with open(model_file, 'rb') as f:
-                        self.models[backend] = pickle.load(f)
-                except Exception:
-                    pass  # Ignore loading errors
-    
-    def _save_model(self, backend: BackendType) -> None:
-        """Save model to disk."""
-        if backend in self.models:
-            model_file = self.model_dir / f"{backend.value}_model.pkl"
-            try:
-                with open(model_file, 'wb') as f:
-                    pickle.dump(self.models[backend], f)
-            except Exception:
-                pass  # Ignore saving errors
-
-
-class PerformancePredictor:
-    """Main performance prediction interface."""
-    
-    def __init__(self, use_ml: bool = True):
-        self.feature_extractor = CircuitFeatureExtractor()
-        self.ml_model = MLPerformanceModel() if use_ml else None
-        self.simple_model = SimplePerformanceModel()
-    
-    def predict_performance(self, circuit: QuantumCircuit, backend: BackendType) -> PredictionResult:
-        """Predict performance for circuit on given backend."""
-        features = self.feature_extractor.extract_features(circuit)
-        
-        if self.ml_model:
-            return self.ml_model.predict_performance(features, backend)
-        else:
-            return self.ml_model._predict_with_heuristic_model(features, backend)
-    
     def record_actual_performance(self, circuit: QuantumCircuit, backend: BackendType,
                                 execution_time: float, memory_usage_mb: float = 0.0,
                                 success: bool = True) -> None:
-        """Record actual performance for model training."""
-        if not self.ml_model:
-            return
-        
-        features = self.feature_extractor.extract_features(circuit)
-        metrics = PerformanceMetrics(
-            execution_time=execution_time,
-            memory_usage_mb=memory_usage_mb,
-            success_probability=1.0 if success else 0.0,
-            accuracy_score=1.0,  # Placeholder
-            energy_consumption=0.0  # Placeholder
-        )
-        
-        self.ml_model.add_training_data(backend, features, metrics)
+        """Record actual performance (No ML training, just logging/future use)."""
+        # Since ML is removed, this function now serves as a placeholder or logging hook.
+        # We keep it to avoid breaking external calls, but it does nothing related to training.
+        warnings.warn("ML training is disabled. Actual performance recording is currently a no-op.")
+        pass
     
     def get_best_backend_for_circuit(self, circuit: QuantumCircuit, 
                                    available_backends: List[BackendType],

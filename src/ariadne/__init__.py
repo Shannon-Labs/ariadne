@@ -7,14 +7,12 @@ from .backends.metal_backend import MetalBackend, get_metal_info, simulate_metal
 from .router import (
     BackendCapacity,
     BackendType,
-    QuantumRouter,
     RoutingDecision,
     SimulationResult,
     simulate,
 )
 
 __all__ = [
-    "QuantumRouter",
     "simulate",
     "BackendType",
     "RoutingDecision",

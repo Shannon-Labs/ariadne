@@ -19,7 +19,7 @@ from qiskit import QuantumCircuit
 from ..route.enhanced_router import UserContext, RouteScore, RouterType
 from ..route.analyze import analyze_circuit
 from ..router import BackendType
-from ..ml.performance_prediction import PerformancePredictor, PredictionResult
+from ..route.performance_model import PerformancePredictor, PredictionResult
 
 
 class OptimizationObjective(Enum):

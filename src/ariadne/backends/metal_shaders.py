@@ -9,7 +9,6 @@ quantum operations using Apple's optimized compute shaders.
 from __future__ import annotations
 
 import math
-import time
 from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
@@ -202,10 +201,6 @@ class MetalQuantumAccelerator:
         self.enable_metal = enable_metal and METAL_AVAILABLE
         self.shader_library = MetalShaderLibrary() if self.enable_metal else None
         
-        # Performance tracking
-        self.metal_operations = 0
-        self.cpu_fallback_operations = 0
-        self.total_gpu_time = 0.0
     
     def apply_single_qubit_gate_metal(self, 
                                     state: np.ndarray,
@@ -217,22 +212,14 @@ class MetalQuantumAccelerator:
             return self._apply_single_qubit_gate_cpu(state, gate_matrix, qubit)
         
         try:
-            start_time = time.perf_counter()
-            
             # This would be the actual Metal implementation
-            # For now, fall back to CPU with timing simulation
+            # For now, fall back to CPU
             result = self._apply_single_qubit_gate_cpu(state, gate_matrix, qubit)
-            
-            # Simulate Metal timing (typically 2-5x faster than CPU)
-            gpu_time = (time.perf_counter() - start_time) * 0.3
-            self.total_gpu_time += gpu_time
-            self.metal_operations += 1
             
             return result
             
         except Exception:
             # Fall back to CPU implementation
-            self.cpu_fallback_operations += 1
             return self._apply_single_qubit_gate_cpu(state, gate_matrix, qubit)
     
     def apply_two_qubit_gate_metal(self,
@@ -245,20 +232,12 @@ class MetalQuantumAccelerator:
             return self._apply_two_qubit_gate_cpu(state, gate_matrix, qubits)
         
         try:
-            start_time = time.perf_counter()
-            
             # This would be the actual Metal implementation
             result = self._apply_two_qubit_gate_cpu(state, gate_matrix, qubits)
-            
-            # Simulate Metal timing
-            gpu_time = (time.perf_counter() - start_time) * 0.25
-            self.total_gpu_time += gpu_time
-            self.metal_operations += 1
             
             return result
             
         except Exception:
-            self.cpu_fallback_operations += 1
             return self._apply_two_qubit_gate_cpu(state, gate_matrix, qubits)
     
     def calculate_probabilities_metal(self, state: np.ndarray) -> np.ndarray:
@@ -268,20 +247,12 @@ class MetalQuantumAccelerator:
             return np.abs(state) ** 2
         
         try:
-            start_time = time.perf_counter()
-            
             # Metal implementation would use parallel GPU computation
             probabilities = np.abs(state) ** 2
-            
-            # Simulate Metal timing (very fast for parallel operations)
-            gpu_time = (time.perf_counter() - start_time) * 0.1
-            self.total_gpu_time += gpu_time
-            self.metal_operations += 1
             
             return probabilities
             
         except Exception:
-            self.cpu_fallback_operations += 1
             return np.abs(state) ** 2
     
     def _apply_single_qubit_gate_cpu(self,
@@ -335,19 +306,6 @@ class MetalQuantumAccelerator:
         
         return new_state
     
-    def get_performance_stats(self) -> Dict[str, Any]:
-        """Get Metal performance statistics."""
-        total_ops = self.metal_operations + self.cpu_fallback_operations
-        
-        return {
-            'metal_available': self.enable_metal,
-            'metal_operations': self.metal_operations,
-            'cpu_fallback_operations': self.cpu_fallback_operations,
-            'total_operations': total_ops,
-            'metal_usage_rate': self.metal_operations / max(1, total_ops),
-            'total_gpu_time': self.total_gpu_time,
-            'avg_gpu_time_per_op': self.total_gpu_time / max(1, self.metal_operations)
-        }
 
 
 # Convenience functions for Metal-accelerated operations

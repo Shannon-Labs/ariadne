@@ -415,9 +415,6 @@ class MetalBackend:
             'backend_mode': self._mode
         }
         
-        if self.metal_accelerator:
-            stats['metal_stats'] = self.metal_accelerator.get_performance_stats()
-        
         return stats
     
     @property
