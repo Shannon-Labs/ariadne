@@ -1,444 +1,376 @@
 """
-Ariadne Router Calibration System
+Dynamic Backend Capacity Calibration System
 
-Measures actual performance of quantum backends on the current hardware
-and generates calibrated capacity values for intelligent routing.
+This module provides real-time calibration of backend capacities based on
+actual performance measurements. It enables adaptive optimization of the
+quantum router's backend selection algorithm.
 """
 
 from __future__ import annotations
 
 import json
-import os
-import statistics
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Any
+import numpy as np
 
 from qiskit import QuantumCircuit
 
-# Copied from router.py to avoid import issues
-from dataclasses import dataclass
-from enum import Enum
-
-
-class BackendType(Enum):
-    """Available quantum simulation backends."""
-    STIM = "stim"
-    QISKIT = "qiskit"
-    TENSOR_NETWORK = "tensor_network"
-    JAX_METAL = "jax_metal"
-    DDSIM = "ddsim"
-
 
 @dataclass
-class BackendCapacity:
-    """Channel capacity for each backend type."""
-    clifford_capacity: float  # Capacity for Clifford circuits
-    general_capacity: float   # Capacity for general circuits
-    memory_efficiency: float  # Memory efficiency score
-    apple_silicon_boost: float  # Apple Silicon performance boost
-
-
-@dataclass
-class CalibrationResult:
-    """Result of backend calibration on a specific circuit."""
-    backend: str
-    circuit_name: str
-    mean_time: float
+class PerformanceMeasurement:
+    """Single performance measurement for a backend."""
+    backend_name: str
+    circuit_qubits: int
+    circuit_depth: int
+    is_clifford: bool
+    execution_time: float
+    memory_usage_mb: float
     success: bool
-    error: Optional[str] = None
+    timestamp: float
+    shots: int
+    circuit_hash: str
 
 
 @dataclass
-class CalibrationSummary:
-    """Summary of all calibration results."""
-    platform: str
-    timestamp: str
-    baseline_backend: str
-    results: List[CalibrationResult]
+class BackendProfile:
+    """Performance profile for a specific backend."""
+    backend_name: str
+    measurements: List[PerformanceMeasurement]
+    calibrated_capacities: Dict[str, float]
+    last_updated: float
+    confidence_score: float
+
+
+@dataclass 
+class CalibrationData:
+    """Complete calibration dataset."""
+    version: str
+    created_timestamp: float
+    last_updated: float
+    backend_profiles: Dict[str, BackendProfile]
     calibrated_capacities: Dict[str, Dict[str, float]]
-
-
-def create_benchmark_circuits() -> List[Tuple[str, QuantumCircuit, str]]:
-    """Create representative circuits for calibration."""
-    circuits = []
-
-    # 1. Small Clifford circuit (perfect for Stim)
-    qc = QuantumCircuit(4, 4)
-    qc.h(0)
-    for i in range(3):
-        qc.cx(i, i + 1)
-    qc.measure_all()
-    circuits.append(("small_clifford", qc, "clifford"))
-
-    # 2. Medium Clifford circuit
-    qc = QuantumCircuit(8, 8)
-    qc.h(0)
-    for i in range(7):
-        qc.cx(i, i + 1)
-    for i in range(0, 8, 2):
-        qc.h(i)
-    qc.measure_all()
-    circuits.append(("medium_clifford", qc, "clifford"))
-
-    # 3. Small non-Clifford circuit (good for Metal/general backends)
-    qc = QuantumCircuit(4, 4)
-    qc.h(0)
-    qc.ry(0.5, 1)
-    qc.cx(0, 1)
-    qc.t(2)  # T-gate makes it non-Clifford
-    qc.cx(1, 2)
-    qc.rz(0.3, 3)
-    qc.cx(2, 3)
-    qc.measure_all()
-    circuits.append(("small_general", qc, "general"))
-
-    # 4. Medium non-Clifford circuit (QAOA-style)
-    qc = QuantumCircuit(6, 6)
-    # Initial superposition
-    for i in range(6):
-        qc.h(i)
-    # QAOA layer
-    for i in range(5):
-        qc.cx(i, i + 1)
-        qc.rz(0.25, i + 1)
-        qc.cx(i, i + 1)
-    for i in range(6):
-        qc.rx(0.1, i)
-    qc.measure_all()
-    circuits.append(("medium_general", qc, "general"))
-
-    return circuits
-
-
-def benchmark_backend(backend_runner, circuit: QuantumCircuit, shots: int = 128,
-                     repetitions: int = 3) -> Tuple[float, bool, Optional[str]]:
-    """Benchmark a single backend on a circuit."""
-    times = []
-
-    for _ in range(repetitions):
-        try:
-            start = time.perf_counter()
-            backend_runner(circuit, shots)
-            end = time.perf_counter()
-            times.append(end - start)
-        except Exception as e:
-            return float('inf'), False, str(e)
-
-    if times:
-        return statistics.mean(times), True, None
-    else:
-        return float('inf'), False, "No successful runs"
-
-
-class SimpleQuantumRouter:
-    """Simplified router for calibration purposes."""
-
-    def _simulate_qiskit(self, circuit, shots):
-        from qiskit.providers.basic_provider import BasicProvider
-        provider = BasicProvider()
-        backend = provider.get_backend('basic_simulator')
-        job = backend.run(circuit, shots=shots)
-        return job.result().get_counts()
-
-    def _simulate_jax_metal(self, circuit, shots):
-        # Import here to avoid path issues
-        import sys
-        import os
-        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
-        try:
-            from ariadne.backends.metal_backend import MetalBackend
-            backend = MetalBackend(allow_cpu_fallback=True)
-            return backend.simulate(circuit, shots)
-        except ImportError:
-            return self._simulate_qiskit(circuit, shots)
-
-    def _simulate_tensor_network(self, circuit, shots):
-        try:
-            from ariadne.backends.tensor_network_backend import TensorNetworkBackend
-            backend = TensorNetworkBackend()
-            return backend.simulate(circuit, shots)
-        except ImportError:
-            return self._simulate_qiskit(circuit, shots)
-
-    def _simulate_stim(self, circuit, shots):
-        try:
-            import stim
-            # Simplified stim simulation for Clifford circuits
-            num_qubits = circuit.num_qubits
-            counts = {}
-            # Simple 50/50 distribution for demo
-            for i in range(2**min(num_qubits, 10)):
-                state = format(i, f'0{num_qubits}b')
-                counts[state] = shots // (2**min(num_qubits, 10))
-            return counts
-        except ImportError:
-            return self._simulate_qiskit(circuit, shots)
-
-
-def run_calibration(shots: int = 128, repetitions: int = 3,
-                   verbose: bool = True) -> CalibrationSummary:
-    """Run calibration benchmarks on all available backends."""
-    if verbose:
-        print("🔧 Starting Ariadne calibration...")
-        print(f"   Shots per test: {shots}")
-        print(f"   Repetitions: {repetitions}")
-        print()
-
-    router = SimpleQuantumRouter()
-    circuits = create_benchmark_circuits()
-    results = []
-
-    # Define backend runners
-    backend_runners = {
-        'qiskit': router._simulate_qiskit,
-        'jax_metal': router._simulate_jax_metal,
-        'tensor_network': router._simulate_tensor_network,
-        'stim': router._simulate_stim,
-    }
-
-    # Run benchmarks
-    for circuit_name, circuit, circuit_type in circuits:
-        if verbose:
-            print(f"📊 Testing {circuit_name} ({circuit.num_qubits} qubits, {circuit_type})")
-
-        for backend_name, backend_runner in backend_runners.items():
-            if verbose:
-                print(f"   {backend_name}...", end=" ", flush=True)
-
-            # Skip stim for non-Clifford circuits
-            if backend_name == 'stim' and circuit_type != 'clifford':
-                if verbose:
-                    print("skipped (non-Clifford)")
-                continue
-
-            mean_time, success, error = benchmark_backend(
-                backend_runner, circuit, shots, repetitions
-            )
-
-            result = CalibrationResult(
-                backend=backend_name,
-                circuit_name=circuit_name,
-                mean_time=mean_time,
-                success=success,
-                error=error
-            )
-            results.append(result)
-
-            if verbose:
-                if success:
-                    print(f"{mean_time:.4f}s")
-                else:
-                    print(f"failed ({error})")
-
-        if verbose:
-            print()
-
-    # Calculate calibrated capacities
-    calibrated_capacities = calculate_capacities(results, verbose)
-
-    # Create summary
-    import platform
-    import datetime
-
-    summary = CalibrationSummary(
-        platform=f"{platform.system()} {platform.machine()}",
-        timestamp=datetime.datetime.now().isoformat(),
-        baseline_backend="qiskit",
-        results=results,
-        calibrated_capacities=calibrated_capacities
-    )
-
-    if verbose:
-        print("✅ Calibration complete!")
-        print_calibration_summary(calibrated_capacities)
-
-    return summary
-
-
-def calculate_capacities(results: List[CalibrationResult],
-                        verbose: bool = True) -> Dict[str, Dict[str, float]]:
-    """Calculate backend capacities from calibration results."""
-
-    # Group results by circuit type
-    clifford_results = {}
-    general_results = {}
-
-    for result in results:
-        if not result.success:
-            continue
-
-        if 'clifford' in result.circuit_name:
-            if result.backend not in clifford_results:
-                clifford_results[result.backend] = []
-            clifford_results[result.backend].append(result.mean_time)
-        else:
-            if result.backend not in general_results:
-                general_results[result.backend] = []
-            general_results[result.backend].append(result.mean_time)
-
-    # Calculate average times per backend
-    clifford_times = {backend: statistics.mean(times)
-                     for backend, times in clifford_results.items()}
-    general_times = {backend: statistics.mean(times)
-                    for backend, times in general_results.items()}
-
-    # Use Qiskit as baseline
-    qiskit_clifford = clifford_times.get('qiskit', 1.0)
-    qiskit_general = general_times.get('qiskit', 1.0)
-
-    # Calculate capacities (higher = faster relative to baseline)
-    capacities = {}
-
-    for backend in ['qiskit', 'jax_metal', 'tensor_network', 'stim']:
-        clifford_capacity = 10.0  # Default
-        general_capacity = 10.0   # Default
-        apple_silicon_boost = 1.0  # Default
-
-        if backend in clifford_times and qiskit_clifford > 0:
-            # Invert time ratio to get capacity (faster = higher capacity)
-            clifford_capacity = (qiskit_clifford / clifford_times[backend]) * 10.0
-
-        if backend in general_times and qiskit_general > 0:
-            general_capacity = (qiskit_general / general_times[backend]) * 10.0
-
-        # Special handling for backends
-        if backend == 'stim':
-            # Stim has infinite capacity for Clifford, zero for general
-            clifford_capacity = float('inf') if backend in clifford_times else 0.0
-            general_capacity = 0.0
-
-        if backend == 'jax_metal':
-            # Calculate Apple Silicon boost from the speedup over Qiskit
-            if backend in general_times and qiskit_general > 0:
-                apple_silicon_boost = qiskit_general / general_times[backend]
-
-        capacities[backend] = {
-            'clifford_capacity': clifford_capacity,
-            'general_capacity': general_capacity,
-            'memory_efficiency': 0.8,  # Keep defaults for now
-            'apple_silicon_boost': apple_silicon_boost
-        }
-
-    return capacities
-
-
-def print_calibration_summary(capacities: Dict[str, Dict[str, float]]):
-    """Print a nice summary of calibrated values."""
-    print("\n📈 Calibrated Backend Capacities:")
-    print("=" * 50)
-
-    for backend, values in capacities.items():
-        print(f"\n{backend}:")
-        for key, value in values.items():
-            if value == float('inf'):
-                print(f"  {key}: ∞")
-            else:
-                print(f"  {key}: {value:.2f}")
-
-
-def save_calibration(summary: CalibrationSummary,
-                    path: Optional[Path] = None) -> Path:
-    """Save calibration results to JSON file."""
-    if path is None:
-        # Default to ~/.ariadne/calibration.json
-        home = Path.home()
-        ariadne_dir = home / ".ariadne"
-        ariadne_dir.mkdir(exist_ok=True)
-        path = ariadne_dir / "calibration.json"
-
-    # Convert to JSON-serializable format
-    data = asdict(summary)
-
-    # Handle inf values
-    def handle_inf(obj):
-        if isinstance(obj, dict):
-            return {k: handle_inf(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [handle_inf(v) for v in obj]
-        elif obj == float('inf'):
-            return "infinity"
-        else:
-            return obj
-
-    data = handle_inf(data)
-
-    with open(path, 'w') as f:
-        json.dump(data, f, indent=2)
-
-    return path
-
-
-def load_calibration(path: Optional[Path] = None) -> Optional[CalibrationSummary]:
-    """Load calibration results from JSON file."""
-    if path is None:
-        home = Path.home()
-        path = home / ".ariadne" / "calibration.json"
-
-    if not path.exists():
-        return None
-
-    try:
-        with open(path, 'r') as f:
-            data = json.load(f)
-
-        # Handle inf values
-        def restore_inf(obj):
-            if isinstance(obj, dict):
-                return {k: restore_inf(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [restore_inf(v) for v in obj]
-            elif obj == "infinity":
-                return float('inf')
-            else:
-                return obj
-
-        data = restore_inf(data)
-
-        # Reconstruct CalibrationSummary
-        results = [CalibrationResult(**r) for r in data['results']]
-
-        return CalibrationSummary(
-            platform=data['platform'],
-            timestamp=data['timestamp'],
-            baseline_backend=data['baseline_backend'],
-            results=results,
-            calibrated_capacities=data['calibrated_capacities']
+    measurement_count: int
+
+
+class BackendCalibrator:
+    """
+    Dynamic calibration system for quantum backend performance.
+    
+    Continuously learns optimal backend selection based on real performance
+    measurements and adapts routing decisions accordingly.
+    """
+    
+    def __init__(self, calibration_file: Optional[Path] = None):
+        """Initialize calibrator with optional persistent storage."""
+        self.calibration_file = calibration_file or Path("ariadne_calibration.json")
+        self.measurements: List[PerformanceMeasurement] = []
+        self.backend_profiles: Dict[str, BackendProfile] = {}
+        self.calibration_data: Optional[CalibrationData] = None
+        
+        # Load existing calibration data
+        self.load_calibration()
+    
+    def record_measurement(self, 
+                         backend_name: str,
+                         circuit: QuantumCircuit,
+                         execution_time: float,
+                         memory_usage_mb: float = 0.0,
+                         success: bool = True,
+                         shots: int = 1000) -> None:
+        """Record a performance measurement for a backend."""
+        
+        # Create circuit hash for deduplication
+        circuit_hash = self._hash_circuit(circuit)
+        
+        # Analyze circuit properties
+        from ariadne.route.analyze import analyze_circuit
+        analysis = analyze_circuit(circuit)
+        
+        measurement = PerformanceMeasurement(
+            backend_name=backend_name,
+            circuit_qubits=circuit.num_qubits,
+            circuit_depth=circuit.depth(),
+            is_clifford=analysis['is_clifford'],
+            execution_time=execution_time,
+            memory_usage_mb=memory_usage_mb,
+            success=success,
+            timestamp=time.time(),
+            shots=shots,
+            circuit_hash=circuit_hash
         )
-
-    except Exception:
+        
+        self.measurements.append(measurement)
+        
+        # Update backend profile
+        if backend_name not in self.backend_profiles:
+            self.backend_profiles[backend_name] = BackendProfile(
+                backend_name=backend_name,
+                measurements=[],
+                calibrated_capacities={},
+                last_updated=time.time(),
+                confidence_score=0.0
+            )
+        
+        self.backend_profiles[backend_name].measurements.append(measurement)
+        self.backend_profiles[backend_name].last_updated = time.time()
+        
+        # Trigger recalibration if enough new data
+        if len(self.measurements) % 10 == 0:  # Recalibrate every 10 measurements
+            self.recalibrate_all()
+    
+    def recalibrate_all(self) -> None:
+        """Recalibrate all backend capacities based on measurements."""
+        
+        for backend_name, profile in self.backend_profiles.items():
+            if len(profile.measurements) < 3:
+                continue  # Need minimum measurements for calibration
+            
+            # Calculate performance metrics
+            clifford_capacity = self._calculate_clifford_capacity(profile.measurements)
+            general_capacity = self._calculate_general_capacity(profile.measurements)
+            memory_efficiency = self._calculate_memory_efficiency(profile.measurements)
+            apple_silicon_boost = self._calculate_platform_boost(profile.measurements)
+            
+            # Update calibrated capacities
+            profile.calibrated_capacities = {
+                'clifford_capacity': clifford_capacity,
+                'general_capacity': general_capacity,
+                'memory_efficiency': memory_efficiency,
+                'apple_silicon_boost': apple_silicon_boost
+            }
+            
+            # Calculate confidence based on measurement count and variance
+            profile.confidence_score = self._calculate_confidence(profile.measurements)
+        
+        # Save calibration data
+        self.save_calibration()
+    
+    def _calculate_clifford_capacity(self, measurements: List[PerformanceMeasurement]) -> float:
+        """Calculate calibrated Clifford circuit capacity."""
+        clifford_times = [
+            m.execution_time for m in measurements 
+            if m.is_clifford and m.success and m.execution_time > 0
+        ]
+        
+        if not clifford_times:
+            return 8.0  # Default capacity
+        
+        # Higher capacity = lower execution time (better performance)
+        avg_time = np.mean(clifford_times)
+        baseline_time = 0.1  # 100ms baseline
+        
+        # Scale capacity: faster execution = higher capacity
+        capacity = max(1.0, baseline_time / avg_time * 10.0)
+        return min(20.0, capacity)  # Cap at reasonable maximum
+    
+    def _calculate_general_capacity(self, measurements: List[PerformanceMeasurement]) -> float:
+        """Calculate calibrated general circuit capacity."""
+        general_times = [
+            m.execution_time for m in measurements 
+            if not m.is_clifford and m.success and m.execution_time > 0
+        ]
+        
+        if not general_times:
+            return 10.0  # Default capacity
+        
+        avg_time = np.mean(general_times)
+        baseline_time = 0.2  # 200ms baseline for general circuits
+        
+        capacity = max(1.0, baseline_time / avg_time * 12.0)
+        return min(25.0, capacity)
+    
+    def _calculate_memory_efficiency(self, measurements: List[PerformanceMeasurement]) -> float:
+        """Calculate memory efficiency score."""
+        memory_usages = [
+            m.memory_usage_mb for m in measurements 
+            if m.memory_usage_mb > 0 and m.success
+        ]
+        
+        if not memory_usages:
+            return 0.8  # Default efficiency
+        
+        # Qubit scaling analysis
+        qubit_counts = [
+            m.circuit_qubits for m in measurements 
+            if m.memory_usage_mb > 0 and m.success
+        ]
+        
+        if len(memory_usages) < 2:
+            return 0.8
+        
+        # Fit memory scaling: memory ~ 2^qubits
+        try:
+            # Calculate memory per exponential qubit
+            efficiency_scores = []
+            for mem, qubits in zip(memory_usages, qubit_counts):
+                if qubits > 0:
+                    expected_mem = 8 * (2 ** qubits) / (1024 * 1024)  # 8 bytes per amplitude
+                    efficiency = expected_mem / max(mem, 1.0)
+                    efficiency_scores.append(min(1.0, efficiency))
+            
+            if efficiency_scores:
+                return np.mean(efficiency_scores)
+        except:
+            pass
+        
+        return 0.8
+    
+    def _calculate_platform_boost(self, measurements: List[PerformanceMeasurement]) -> float:
+        """Calculate platform-specific performance boost."""
+        # This would compare performance across different platforms
+        # For now, return a conservative estimate based on timing variance
+        
+        times = [m.execution_time for m in measurements if m.success and m.execution_time > 0]
+        
+        if len(times) < 3:
+            return 1.0  # No boost if insufficient data
+        
+        # Lower variance suggests more consistent (optimized) performance
+        time_std = np.std(times)
+        time_mean = np.mean(times)
+        
+        if time_mean > 0:
+            cv = time_std / time_mean  # Coefficient of variation
+            # Lower CV = more consistent = better optimization
+            boost = max(1.0, 2.0 - cv)
+            return min(2.5, boost)
+        
+        return 1.0
+    
+    def _calculate_confidence(self, measurements: List[PerformanceMeasurement]) -> float:
+        """Calculate confidence score for calibration."""
+        count = len(measurements)
+        success_rate = sum(1 for m in measurements if m.success) / max(count, 1)
+        
+        # Confidence increases with more measurements and higher success rate
+        count_confidence = min(1.0, count / 20.0)  # Full confidence at 20+ measurements
+        
+        return (count_confidence * 0.7 + success_rate * 0.3)
+    
+    def _hash_circuit(self, circuit: QuantumCircuit) -> str:
+        """Generate hash for circuit to enable deduplication."""
+        import hashlib
+        
+        # Create a simple representation of the circuit
+        circuit_str = ""
+        for instruction, qubits, clbits in circuit.data:
+            qubit_indices = [circuit.find_bit(q).index for q in qubits]
+            circuit_str += f"{instruction.name}-{qubit_indices};"
+        
+        return hashlib.md5(circuit_str.encode()).hexdigest()[:16]
+    
+    def get_calibrated_capacities(self, backend_name: str) -> Optional[Dict[str, float]]:
+        """Get calibrated capacities for a specific backend."""
+        if backend_name in self.backend_profiles:
+            profile = self.backend_profiles[backend_name]
+            if profile.confidence_score > 0.3:  # Minimum confidence threshold
+                return profile.calibrated_capacities.copy()
+        
         return None
+    
+    def save_calibration(self) -> None:
+        """Save calibration data to persistent storage."""
+        try:
+            # Prepare calibration data
+            calibrated_capacities = {}
+            for name, profile in self.backend_profiles.items():
+                if profile.confidence_score > 0.3:
+                    calibrated_capacities[name] = profile.calibrated_capacities
+            
+            calibration_data = CalibrationData(
+                version="1.0",
+                created_timestamp=getattr(self.calibration_data, 'created_timestamp', time.time()),
+                last_updated=time.time(),
+                backend_profiles=self.backend_profiles,
+                calibrated_capacities=calibrated_capacities,
+                measurement_count=len(self.measurements)
+            )
+            
+            self.calibration_data = calibration_data
+            
+            # Convert to JSON-serializable format
+            data_dict = {
+                'version': calibration_data.version,
+                'created_timestamp': calibration_data.created_timestamp,
+                'last_updated': calibration_data.last_updated,
+                'calibrated_capacities': calibration_data.calibrated_capacities,
+                'measurement_count': calibration_data.measurement_count,
+                'backend_profiles': {
+                    name: {
+                        'backend_name': profile.backend_name,
+                        'calibrated_capacities': profile.calibrated_capacities,
+                        'last_updated': profile.last_updated,
+                        'confidence_score': profile.confidence_score,
+                        'measurement_count': len(profile.measurements)
+                    }
+                    for name, profile in calibration_data.backend_profiles.items()
+                }
+            }
+            
+            # Save to file
+            with open(self.calibration_file, 'w') as f:
+                json.dump(data_dict, f, indent=2)
+                
+        except Exception as e:
+            print(f"Warning: Failed to save calibration data: {e}")
+    
+    def load_calibration(self) -> None:
+        """Load calibration data from persistent storage."""
+        try:
+            if not self.calibration_file.exists():
+                return
+            
+            with open(self.calibration_file, 'r') as f:
+                data_dict = json.load(f)
+            
+            # Reconstruct calibration data (simplified version)
+            self.calibration_data = CalibrationData(
+                version=data_dict.get('version', '1.0'),
+                created_timestamp=data_dict.get('created_timestamp', time.time()),
+                last_updated=data_dict.get('last_updated', time.time()),
+                backend_profiles={},  # Simplified - don't load full measurements
+                calibrated_capacities=data_dict.get('calibrated_capacities', {}),
+                measurement_count=data_dict.get('measurement_count', 0)
+            )
+            
+        except Exception as e:
+            print(f"Warning: Failed to load calibration data: {e}")
+            self.calibration_data = None
 
 
-if __name__ == "__main__":
-    import argparse
+# Global calibrator instance
+_global_calibrator: Optional[BackendCalibrator] = None
 
-    parser = argparse.ArgumentParser(description="Calibrate Ariadne quantum router")
-    parser.add_argument("--shots", type=int, default=128,
-                       help="Number of shots per benchmark")
-    parser.add_argument("--repetitions", type=int, default=3,
-                       help="Number of repetitions per benchmark")
-    parser.add_argument("--output", type=Path,
-                       help="Output path (default: ~/.ariadne/calibration.json)")
-    parser.add_argument("--quiet", action="store_true",
-                       help="Suppress verbose output")
 
-    args = parser.parse_args()
+def get_calibrator() -> BackendCalibrator:
+    """Get the global calibrator instance."""
+    global _global_calibrator
+    if _global_calibrator is None:
+        _global_calibrator = BackendCalibrator()
+    return _global_calibrator
 
-    # Run calibration
-    summary = run_calibration(
-        shots=args.shots,
-        repetitions=args.repetitions,
-        verbose=not args.quiet
+
+def load_calibration() -> Optional[CalibrationData]:
+    """Load calibration data for router initialization."""
+    calibrator = get_calibrator()
+    return calibrator.calibration_data
+
+
+def record_backend_performance(backend_name: str,
+                             circuit: QuantumCircuit,
+                             execution_time: float,
+                             memory_usage_mb: float = 0.0,
+                             success: bool = True,
+                             shots: int = 1000) -> None:
+    """Record backend performance measurement."""
+    calibrator = get_calibrator()
+    calibrator.record_measurement(
+        backend_name=backend_name,
+        circuit=circuit,
+        execution_time=execution_time,
+        memory_usage_mb=memory_usage_mb,
+        success=success,
+        shots=shots
     )
-
-    # Save results
-    output_path = save_calibration(summary, args.output)
-
-    if not args.quiet:
-        print(f"\n💾 Calibration saved to: {output_path}")
-        print("\nTo use calibrated routing:")
-        print("  from ariadne.router import QuantumRouter")
-        print("  router = QuantumRouter()  # Automatically loads calibration")
