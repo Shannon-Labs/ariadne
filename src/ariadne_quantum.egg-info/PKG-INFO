@@ -1,3 +1,60 @@
+Metadata-Version: 2.4
+Name: ariadne-quantum
+Version: 1.0.0
+Summary: Ariadne: The Intelligent Quantum Router - Google Maps for Quantum Circuits with Apple Silicon & CUDA acceleration
+Author: Shannon Labs
+License: Apache-2.0
+Keywords: quantum,simulator,qasm3,quantum-computing,apple-silicon,cuda,jax,metal,intelligent-routing,bell-labs,shannon-labs
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Education
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Scientific/Engineering
+Classifier: Topic :: Scientific/Engineering :: Physics
+Classifier: Topic :: Education
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: qiskit>=2.1.1
+Requires-Dist: qiskit-aer>=0.17.2
+Requires-Dist: stim>=1.15.0
+Requires-Dist: quimb>=1.11.2
+Requires-Dist: cotengra>=0.7.5
+Requires-Dist: opt_einsum>=3.3
+Requires-Dist: mqt.ddsim>=2.0.0
+Requires-Dist: numpy>=1.21
+Requires-Dist: scipy>=1.7
+Requires-Dist: networkx>=3.0
+Requires-Dist: matplotlib>=3.5.0
+Requires-Dist: pytest>=7.0.0
+Provides-Extra: cuda
+Requires-Dist: cupy-cuda12x>=12.0.0; extra == "cuda"
+Provides-Extra: apple
+Requires-Dist: jax>=0.4; (platform_system == "Darwin" and platform_machine == "arm64") and extra == "apple"
+Requires-Dist: jaxlib>=0.4; (platform_system == "Darwin" and platform_machine == "arm64") and extra == "apple"
+Requires-Dist: jax-metal>=0.1; (platform_system == "Darwin" and platform_machine == "arm64") and extra == "apple"
+Provides-Extra: viz
+Requires-Dist: matplotlib>=3.5; extra == "viz"
+Requires-Dist: seaborn>=0.11; extra == "viz"
+Requires-Dist: plotly>=5.0; extra == "viz"
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pytest-cov>=3.0; extra == "dev"
+Requires-Dist: black>=22.0; extra == "dev"
+Requires-Dist: isort>=5.10; extra == "dev"
+Requires-Dist: pre-commit>=2.17; extra == "dev"
+Requires-Dist: mypy>=0.950; extra == "dev"
+Provides-Extra: docs
+Requires-Dist: sphinx>=5.0; extra == "docs"
+Requires-Dist: sphinx-rtd-theme>=1.2; extra == "docs"
+Requires-Dist: myst-parser>=0.18; extra == "docs"
+Dynamic: license-file
+
 <div align="center">
 
 # Ariadne

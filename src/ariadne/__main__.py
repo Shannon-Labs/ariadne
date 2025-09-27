@@ -1,39 +1,20 @@
-"""
-Ariadne command-line interface.
-
-Usage:
-    python -m ariadne calibrate [options]
-"""
-
-import sys
-from .calibration import run_calibration, save_calibration
-
+import argparse
 
 def main():
-    """Main CLI entry point."""
-    if len(sys.argv) < 2:
-        print("Usage: python -m ariadne <command>")
-        print("Commands:")
-        print("  calibrate  - Calibrate router for current hardware")
-        sys.exit(1)
+    """Main command-line interface for Ariadne."""
+    parser = argparse.ArgumentParser(
+        prog="ariadne",
+        description="Ariadne: The Intelligent Quantum Router."
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s 1.0.0"
+    )
+    # Future sub-commands for simulate, route, benchmark, etc. can be added here.
+    args = parser.parse_args()
 
-    command = sys.argv[1]
-
-    if command == "calibrate":
-        # Run calibration with default settings
-        print("🚀 Starting Ariadne calibration...")
-        summary = run_calibration(shots=128, repetitions=3, verbose=True)
-
-        # Save to default location
-        output_path = save_calibration(summary)
-
-        print(f"\n✅ Calibration complete! Saved to: {output_path}")
-        print("\nYour router will now use these calibrated values automatically.")
-
-    else:
-        print(f"Unknown command: {command}")
-        sys.exit(1)
-
+    print("Welcome to Ariadne. Use --help for options.")
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,5 @@
 [project]
 name = "ariadne-quantum"
-version = "1.0.0"
 description = "Ariadne: The Intelligent Quantum Router - Google Maps for Quantum Circuits with Apple Silicon & CUDA acceleration"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -67,7 +66,7 @@ docs = [
 ]
 
 [project.scripts]
-ariadne = "ariadne.router:simulate"
+ariadne = "ariadne.__main__:main"
 
 [tool.ruff]
 line-length = 100
@@ -125,7 +124,7 @@ exclude_lines = [
 ]
 
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -138,3 +137,6 @@ exclude = ["tests*", "docs*"]
 
 [tool.setuptools.package-data]
 ariadne = ["*.txt", "*.md", "*.yml", "*.yaml"]
+
+[tool.setuptools_scm]
+write_to = "src/ariadne/_version.py"
