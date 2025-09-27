@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import Enum
 from time import perf_counter
 from typing import Any
+import logging
 
 import numpy as np
 from qiskit import QuantumCircuit
@@ -74,6 +75,8 @@ class SimulationResult:
     execution_time: float
     routing_decision: RoutingDecision
     metadata: dict[str, Any]
+    fallback_reason: str | None = None  # Reason for backend fallback
+    warnings: list[str] | None = None   # Any warnings during execution
 
 
 class QuantumRouter:
@@ -83,6 +86,10 @@ class QuantumRouter:
         self._cuda_available = is_cuda_available()
         self._metal_available = is_metal_available()
         self._tensor_backend: TensorNetworkBackend | None = None
+        
+        # Set up logging
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Router initialized: CUDA available: {self._cuda_available}, Metal available: {self._metal_available}")
 
         self.backend_capacities: dict[BackendType, BackendCapacity] = {
             BackendType.STIM: BackendCapacity(
@@ -104,10 +111,12 @@ class QuantumRouter:
                 apple_silicon_boost=1.0,
             ),
             BackendType.JAX_METAL: BackendCapacity(
-                clifford_capacity=8.0 if self._metal_available else 0.0,
-                general_capacity=8.0 if self._metal_available else 0.0,
+                # More conservative capacity estimates based on actual performance
+                clifford_capacity=7.0 if self._metal_available else 0.0,
+                general_capacity=7.5 if self._metal_available else 0.0,
                 memory_efficiency=0.8,
-                apple_silicon_boost=5.0,
+                # Reduce boost factor to reflect actual 1.16-1.51x performance
+                apple_silicon_boost=1.5,
             ),
             BackendType.DDSIM: BackendCapacity(
                 clifford_capacity=7.0,
@@ -237,6 +246,14 @@ class QuantumRouter:
 
         routing_decision = self.select_optimal_backend(circuit)
         backend = routing_decision.recommended_backend
+        
+        # Initialize result tracking
+        fallback_reason = None
+        warnings_list = []
+        
+        # Set up logging for backend selection
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Selected backend: {backend.value} (confidence: {routing_decision.confidence_score:.3f})")
 
         start = perf_counter()
 
@@ -253,11 +270,29 @@ class QuantumRouter:
                 counts = self._simulate_ddsim(circuit, shots)
             else:
                 counts = self._simulate_cuda(circuit, shots)
-        except Exception:
-            counts = self._simulate_qiskit(circuit, shots)
-            backend = BackendType.QISKIT
+        except Exception as exc:
+            # Log the specific failure for debugging
+            logger.warning(f"Backend {backend.value} failed: {exc}. Falling back to Qiskit.")
+            fallback_reason = f"Backend {backend.value} failed: {str(exc)}"
+            
+            # Attempt fallback to Qiskit
+            try:
+                counts = self._simulate_qiskit(circuit, shots)
+                backend = BackendType.QISKIT
+            except Exception as qiskit_exc:
+                # Last resort: log and re-raise the original exception
+                logger.error(f"Qiskit fallback also failed: {qiskit_exc}")
+                raise RuntimeError(
+                    f"All backends failed. Original error: {exc}. Qiskit fallback error: {qiskit_exc}"
+                ) from exc
 
         elapsed = perf_counter() - start
+        
+        # Check for experimental backend warnings
+        if backend == BackendType.JAX_METAL:
+            warnings_list.append("JAX-Metal support is experimental and may show warnings")
+        elif backend == BackendType.CUDA and not self._cuda_available:
+            warnings_list.append("CUDA backend selected but CUDA not available")
 
         return SimulationResult(
             counts=counts,
@@ -265,6 +300,8 @@ class QuantumRouter:
             execution_time=elapsed,
             routing_decision=routing_decision,
             metadata={"shots": shots},
+            fallback_reason=fallback_reason,
+            warnings=warnings_list if warnings_list else None
         )
 
     def _simulate_stim(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
@@ -314,21 +351,32 @@ class QuantumRouter:
 
     def _simulate_jax_metal(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         """Simulate using the new hybrid Metal backend for Apple Silicon."""
+        logger = logging.getLogger(__name__)
+        
         try:
             from .backends.metal_backend import MetalBackend
 
             # Use our new MetalBackend with hybrid approach
             backend = MetalBackend(allow_cpu_fallback=True)
             result = backend.simulate(circuit, shots)
+            
+            # Log backend mode for debugging
+            logger.debug(f"Metal backend executed in mode: {backend.backend_mode}")
+            
+            # Check if Metal actually accelerated or fell back to CPU
+            if backend.backend_mode == "cpu":
+                logger.debug("Metal backend fell back to CPU mode")
 
             return result
 
-        except ImportError:
+        except ImportError as exc:
+            logger.debug(f"MetalBackend not available: {exc}")
             # Fallback to Qiskit if MetalBackend not available
-            return self._simulate_qiskit(circuit, shots)
-        except Exception:
-            # Fallback to Qiskit for any other errors
-            return self._simulate_qiskit(circuit, shots)
+            raise RuntimeError("Metal backend dependencies not available") from exc
+        except Exception as exc:
+            logger.warning(f"Metal backend execution failed: {exc}")
+            # Re-raise for higher-level fallback handling
+            raise RuntimeError(f"Metal backend execution failed: {exc}") from exc
 
     def _simulate_ddsim(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         try:
@@ -386,7 +434,8 @@ class QuantumRouter:
         import platform
 
         if platform.system() == "Darwin" and platform.machine() in {"arm", "arm64"}:
-            return 5.0
+            # More realistic boost factor based on actual benchmarks
+            return 1.5
         return 1.0
 
 

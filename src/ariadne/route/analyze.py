@@ -208,7 +208,10 @@ def calculate_expressivity(circ: QuantumCircuit) -> float:
         0.2 * param_ratio
     )
     
-    return min(1.0, expressivity)def interaction_graph(circ: QuantumCircuit) -> nx.Graph:
+    return min(1.0, expressivity)
+
+
+def interaction_graph(circ: QuantumCircuit) -> nx.Graph:
     g = nx.Graph()
     g.add_nodes_from(range(circ.num_qubits))
     # Qiskit 2.x no longer exposes .index directly, so pre-compute lookup table
