@@ -7,8 +7,8 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PyPI version](https://badge.fury.io/py/ariadne-quantum.svg)](https://badge.fury.io/py/ariadne-quantum)
-[![CI/CD Pipeline](https://github.com/Shannon-Labs/ariadne/actions/workflows/ci.yml/badge.svg)](https://github.com/Shannon-Labs/ariadne/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/Shannon-Labs/ariadne/branch/main/graph/badge.svg)](https://codecov.io/gh/Shannon-Labs/ariadne)
+[![CI/CD Pipeline](https://img.shields.io/github/actions/workflow/status/Shannon-Labs/ariadne/ci.yml?branch=main&label=CI%2FCD&style=for-the-badge)](https://github.com/Shannon-Labs/ariadne/actions/workflows/ci.yml)
+[![codecov](https://img.shields.io/codecov/c/github/Shannon-Labs/ariadne/main?style=for-the-badge)](https://codecov.io/gh/Shannon-Labs/ariadne)
 
 </div>
 
@@ -52,7 +52,7 @@ graph TD
     B -- FAIL (High Entanglement) --> D{Other Specialized Analyzer?};
     D -- PASS (e.g., Clifford) --> E[Stim Backend];
     D -- FAIL --> F[Universal Fallback Backend];
-    C --> G[Result (10x Speedup)];
+    C --> G["Result (10x Speedup)"];
     E --> G;
     F --> G;
 ```
