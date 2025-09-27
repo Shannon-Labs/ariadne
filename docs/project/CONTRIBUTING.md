@@ -158,13 +158,13 @@ Your PR must:
 ## 🏗️ Architecture Overview
 
 ```
-ariadne/
-├── core/          # Core routing logic
-├── backends/      # Simulator backends
-├── converters/    # Circuit converters
-├── route/         # Routing algorithms
-├── utils/         # Utilities
-└── benchmarks/    # Performance tests
+src/ariadne/
+├── backends/      # Simulator backends (e.g., cuda, metal, cirq)
+├── passes/        # Circuit transformation passes
+├── route/         # Core routing logic and circuit analysis
+├── __main__.py    # Command-line entry point
+├── router.py      # Main QuantumRouter class
+└── simulation.py  # Unified simulate() function
 ```
 
 ### Key Components
@@ -257,7 +257,7 @@ When claiming performance improvements:
 
 ## 📜 License
 
-By contributing, you agree that your contributions will be licensed under the same license as the project (MIT).
+By contributing, you agree that your contributions will be licensed under the Apache 2.0 License, the same license as the project.
 
 ## 🙏 Recognition
 

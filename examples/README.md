@@ -1,100 +1,35 @@
 # Ariadne Examples
 
-This directory contains example scripts demonstrating Ariadne's capabilities.
+This directory contains a variety of examples to help you get started with Ariadne.
 
-## Quick Start Examples
+## How to Run the Examples
 
-### 1. `quickstart.py`
-Basic introduction to Ariadne's automatic routing:
-- Simple Bell state preparation
-- Large Clifford circuits
-- General circuits with T gates
-- Inspecting routing decisions
-- Forcing specific backends
+The examples are provided in two formats: Jupyter Notebooks (`.ipynb`) and Python scripts (`.py`).
 
+### Jupyter Notebooks (`.ipynb`)
+
+Jupyter Notebooks are the best way to interactively explore Ariadne's features.
+
+1.  **Install Jupyter:**
+    ```bash
+    pip install jupyterlab
+    ```
+
+2.  **Start JupyterLab:**
+    ```bash
+    jupyter lab
+    ```
+
+3.  **Navigate and Run:**
+    From the JupyterLab interface, navigate to the `examples` directory and open any `.ipynb` file to view and run the cells.
+
+### Python Scripts (`.py`)
+
+The Python scripts are straightforward, non-interactive demonstrations of Ariadne's capabilities. You can run them directly from your terminal.
+
+**For example, to run the quickstart demo:**
 ```bash
 python examples/quickstart.py
 ```
 
-### 2. `performance_comparison.py`
-Benchmarks comparing Ariadne's intelligent routing vs fixed backends:
-- GHZ state circuits (Clifford)
-- QFT circuits (non-Clifford)
-- Performance visualization
-
-```bash
-python examples/performance_comparison.py
-```
-
-### 3. `quantum_algorithms.py`
-Real quantum algorithms and how Ariadne routes them:
-- Grover's search algorithm
-- Quantum phase estimation
-- Quantum teleportation
-- Bernstein-Vazirani algorithm
-
-```bash
-python examples/quantum_algorithms.py
-```
-
-## Advanced Examples
-
-### CUDA Backend Usage
-```python
-from ariadne.backends.cuda_backend import CUDABackend
-
-# Check CUDA availability
-from ariadne.backends.cuda_backend import is_cuda_available
-if is_cuda_available():
-    backend = CUDABackend()
-    result = backend.simulate(circuit, shots=1000)
-```
-
-### Custom Routing Logic
-```python
-from ariadne import QuantumRouter
-
-# Create router with custom configuration
-router = QuantumRouter(config={
-    'clifford_threshold': 0.95,  # 95% Clifford gates triggers Stim
-    'prefer_gpu': True,           # Prefer GPU backends when available
-})
-```
-
-### Circuit Analysis
-```python
-from ariadne.route.analyze import analyze_circuit
-
-analysis = analyze_circuit(circuit)
-print(f"Circuit entropy: {analysis['circuit_entropy']}")
-print(f"Estimated runtime: {analysis['estimated_runtime']}")
-```
-
-## Performance Tips
-
-1. **Let Ariadne choose**: The automatic routing usually picks the best backend
-2. **Batch similar circuits**: Process similar circuits together for better performance
-3. **Use circuit analysis**: Understand your circuit structure with the analysis tools
-
-## Running All Examples
-
-```bash
-# Run all examples
-for example in quickstart performance_comparison quantum_algorithms; do
-    echo "Running $example.py..."
-    python examples/$example.py
-    echo
-done
-```
-
-## Expected Performance
-
-- **Clifford circuits**: 1000-5000× speedup with Stim backend
-- **General circuits**: 50× speedup with CUDA backend (GPU required)
-- **Large circuits**: Efficient memory usage with tensor network backends
-
-## Need Help?
-
-- Check the [API documentation](../docs/api_reference.md)
-- Join our [Discord community](https://discord.gg/shannonlabs)
-- Report issues on [GitHub](https://github.com/Shannon-Labs/ariadne/issues)
+Each script is self-contained and can be run individually.
