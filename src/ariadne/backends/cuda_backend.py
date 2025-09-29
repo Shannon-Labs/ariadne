@@ -96,6 +96,11 @@ class CUDABackend:
         self.memory_pool_fraction = memory_pool_fraction
         self.use_custom_kernels = use_custom_kernels
         
+        # Memory management for large circuits
+        self.memory_threshold = self.memory_pool_fraction * 0.8  # Reserve 20% for operations
+        self.chunk_size_qubits = 28  # Maximum qubits per chunk
+        self.use_streaming = True
+        
         # Initialize CUDA devices
         if prefer_gpu and CUDA_AVAILABLE:
             self._initialize_cuda_devices(device_id, allow_cpu_fallback)

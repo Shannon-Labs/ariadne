@@ -1,0 +1,156 @@
+{
+  "title": "Cross-Platform Performance Comparison - macos_apple_silicon",
+  "generated_at": 1759147615.153718,
+  "system_info": {
+    "platform_type": "macos_apple_silicon",
+    "cpu_count": 14,
+    "memory_total": 38654705664,
+    "gpu_info": {
+      "available": false
+    }
+  },
+  "summary_stats": {
+    "cpu_numpy": {
+      "avg_execution_time": 0.9638431769126328,
+      "min_execution_time": 0.000692228990374133,
+      "max_execution_time": 4.874581499505439,
+      "avg_throughput": 344972.5504772943,
+      "max_throughput": 1444608.6683822996,
+      "avg_memory_peak": 282624,
+      "total_tests": 6
+    }
+  },
+  "recommendations": [
+    "Fastest overall backend: cpu_numpy",
+    "Highest throughput backend: cpu_numpy",
+    "Most memory efficient backend: cpu_numpy"
+  ],
+  "results": [
+    {
+      "backend_type": "cpu_numpy",
+      "circuit_qubits": 5,
+      "circuit_depth": 10,
+      "shots": 1000,
+      "execution_time": 0.000692228990374133,
+      "memory_peak": 8192,
+      "throughput": 1444608.6683822996,
+      "timestamp": 1759147597.884605,
+      "metadata": {
+        "execution_times": [
+          0.0007561669917777181,
+          0.0006282909889705479
+        ],
+        "memory_peaks": [
+          0,
+          16384
+        ],
+        "iterations": 2
+      }
+    },
+    {
+      "backend_type": "cpu_numpy",
+      "circuit_qubits": 5,
+      "circuit_depth": 50,
+      "shots": 1000,
+      "execution_time": 0.006298332998994738,
+      "memory_peak": 32768,
+      "throughput": 158772.17037581335,
+      "timestamp": 1759147597.932792,
+      "metadata": {
+        "execution_times": [
+          0.006951124989427626,
+          0.00564554100856185
+        ],
+        "memory_peaks": [
+          16384,
+          49152
+        ],
+        "iterations": 2
+      }
+    },
+    {
+      "backend_type": "cpu_numpy",
+      "circuit_qubits": 10,
+      "circuit_depth": 10,
+      "shots": 1000,
+      "execution_time": 0.0025304584996774793,
+      "memory_peak": 114688,
+      "throughput": 395185.2994733782,
+      "timestamp": 1759147597.940803,
+      "metadata": {
+        "execution_times": [
+          0.002970000001369044,
+          0.0020909169979859143
+        ],
+        "memory_peaks": [
+          180224,
+          49152
+        ],
+        "iterations": 2
+      }
+    },
+    {
+      "backend_type": "cpu_numpy",
+      "circuit_qubits": 10,
+      "circuit_depth": 50,
+      "shots": 1000,
+      "execution_time": 0.014299270493211225,
+      "memory_peak": 139264,
+      "throughput": 69933.63755687843,
+      "timestamp": 1759147597.979708,
+      "metadata": {
+        "execution_times": [
+          0.006470749998698011,
+          0.02212779098772444
+        ],
+        "memory_peaks": [
+          81920,
+          196608
+        ],
+        "iterations": 2
+      }
+    },
+    {
+      "backend_type": "cpu_numpy",
+      "circuit_qubits": 15,
+      "circuit_depth": 10,
+      "shots": 1000,
+      "execution_time": 0.8846572709881002,
+      "memory_peak": 794624,
+      "throughput": 1130.3812592678632,
+      "timestamp": 1759147600.492573,
+      "metadata": {
+        "execution_times": [
+          0.9277936249854974,
+          0.841520916990703
+        ],
+        "memory_peaks": [
+          1212416,
+          376832
+        ],
+        "iterations": 2
+      }
+    },
+    {
+      "backend_type": "cpu_numpy",
+      "circuit_qubits": 15,
+      "circuit_depth": 50,
+      "shots": 1000,
+      "execution_time": 4.874581499505439,
+      "memory_peak": 606208,
+      "throughput": 205.1458161283091,
+      "timestamp": 1759147615.1536489,
+      "metadata": {
+        "execution_times": [
+          4.876089916011551,
+          4.873073082999326
+        ],
+        "memory_peaks": [
+          606208,
+          606208
+        ],
+        "iterations": 2
+      }
+    }
+  ]
+}

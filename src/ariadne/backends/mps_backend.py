@@ -84,15 +84,17 @@ class MPSBackend(UniversalBackend):
 
         # 3. Sample counts directly from the MPS
         # This avoids the exponential O(2^N) contraction step, restoring polynomial scaling.
-        samples = mps.sample(n_samples=shots)
+        samples_gen = mps.sample(shots)
         
-        # Convert samples (list of integers) to Qiskit-style counts dictionary (bitstrings)
+        # Convert samples generator to list and process
         counts = {}
-        # n_qubits is defined on line 42
         
-        for state_int in samples:
-            # Convert integer state to bitstring (MSB first, e.g., 0101)
-            bitstring = f'{state_int:0{n_qubits}b}'
+        for sample_tuple in list(samples_gen):
+            # The sample is a tuple of (state_list, probability)
+            # We only need the state_list part
+            state_list, _ = sample_tuple
+            # Convert list of bits to bitstring (e.g., [0, 1, 0] -> "010")
+            bitstring = ''.join(str(bit) for bit in state_list)
             counts[bitstring] = counts.get(bitstring, 0) + 1
             
         return counts

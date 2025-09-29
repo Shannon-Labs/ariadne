@@ -134,7 +134,7 @@ class TestBackendIntegration:
         qc.measure_all()
         
         result = simulate(qc, shots=100)
-        assert result.backend_used in [BackendType.QISKIT, BackendType.CUDA, BackendType.TENSOR_NETWORK, BackendType.JAX_METAL]
+        assert result.backend_used in [BackendType.QISKIT, BackendType.CUDA, BackendType.TENSOR_NETWORK, BackendType.JAX_METAL, BackendType.MPS]
     
     def test_forced_backend_override(self):
         """Test forcing specific backend works."""

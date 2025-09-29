@@ -30,6 +30,7 @@ def estimate_circuit_resources(
     target_error_rate: float = 1e-3,
     include_magic_states: bool = True,
     include_measurement: bool = True,
+    shots: int = 1000,
 ) -> ResourceEstimate:
     """
     Estimate resources required for fault-tolerant execution of a quantum circuit.

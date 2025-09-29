@@ -73,8 +73,12 @@ class ResultAnalyzer:
         # Ensure output directory exists
         self.config.output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Set matplotlib style
-        plt.style.use(self.config.style)
+        # Set matplotlib style with fallback
+        try:
+            plt.style.use(self.config.style)
+        except OSError:
+            # Fallback to default style if seaborn is not available
+            plt.style.use('default')
         sns.set_palette(self.config.color_palette)
     
     def analyze_single_result(self, result) -> dict[str, Any]:
@@ -196,6 +200,15 @@ class ResultAnalyzer:
     def _calculate_statistical_metrics(self, counts: dict[str, int]) -> dict[str, float]:
         """Calculate statistical metrics for measurement results."""
         total_shots = sum(counts.values())
+        if total_shots == 0 or len(counts) == 0:
+            return {
+                'mean_probability': 0.0,
+                'std_probability': 0.0,
+                'max_probability': 0.0,
+                'min_probability': 0.0,
+                'coefficient_of_variation': 0.0
+            }
+        
         probabilities = [count / total_shots for count in counts.values()]
         
         return {
@@ -295,7 +308,8 @@ class ResultVisualizer:
     def _plot_measurement_distribution(self, result) -> Figure:
         """Plot measurement outcome distribution."""
         
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=self.config.figure_size)
+        fig, axes = plt.subplots(1, 2, figsize=self.config.figure_size)
+        ax1, ax2 = axes
         
         # Bar plot of counts
         states = list(result.counts.keys())
@@ -322,11 +336,12 @@ class ResultVisualizer:
         """Plot performance metrics."""
         
         fig, axes = plt.subplots(2, 2, figsize=self.config.figure_size)
+        ax00, ax01, ax10, ax11 = axes[0,0], axes[0,1], axes[1,0], axes[1,1]
         
         # Execution time
-        axes[0,0].bar(['Execution Time'], [result.execution_time])
-        axes[0,0].set_ylabel('Time (seconds)')
-        axes[0,0].set_title('Execution Time')
+        ax00.bar(['Execution Time'], [result.execution_time])
+        ax00.set_ylabel('Time (seconds)')
+        ax00.set_title('Execution Time')
         
         # Backend information
         backend_info = getattr(result, 'backend_performance', {})
@@ -334,9 +349,9 @@ class ResultVisualizer:
             metrics = list(backend_info.keys())[:3]  # Show top 3 metrics
             values = [backend_info[m] for m in metrics]
             
-            axes[0,1].bar(metrics, values)
-            axes[0,1].set_title('Backend Performance Metrics')
-            axes[0,1].tick_params(axis='x', rotation=45)
+            ax01.bar(metrics, values)
+            ax01.set_title('Backend Performance Metrics')
+            ax01.tick_params(axis='x', rotation=45)
         
         # Resource usage (if available)
         if hasattr(result, 'resource_estimate') and result.resource_estimate:
@@ -346,9 +361,9 @@ class ResultVisualizer:
                 'Gates': getattr(result.resource_estimate, 'gate_count_estimate', 0)
             }
             
-            axes[1,0].bar(resource_data.keys(), resource_data.values())
-            axes[1,0].set_title('Resource Requirements')
-            axes[1,0].tick_params(axis='x', rotation=45)
+            ax10.bar(resource_data.keys(), resource_data.values())
+            ax10.set_title('Resource Requirements')
+            ax10.tick_params(axis='x', rotation=45)
         
         # Circuit analysis (if available)
         if hasattr(result, 'circuit_analysis'):
@@ -359,8 +374,8 @@ class ResultVisualizer:
                 'Entropy': analysis.get('gate_entropy', 0)
             }
             
-            axes[1,1].bar(key_metrics.keys(), key_metrics.values())
-            axes[1,1].set_title('Circuit Characteristics')
+            ax11.bar(key_metrics.keys(), key_metrics.values())
+            ax11.set_title('Circuit Characteristics')
         
         plt.tight_layout()
         return fig
@@ -440,10 +455,11 @@ class ResultVisualizer:
         ax1.tick_params(axis='x', rotation=45)
         
         # Add value labels on bars
-        for bar, time_val in zip(bars1, execution_times, strict=False):
+        for i, (bar, time_val) in enumerate(zip(bars1, execution_times, strict=False)):
             height = bar.get_height()
-            ax1.text(bar.get_x() + bar.get_width()/2., height,
-                    f'{time_val:.3f}s', ha='center', va='bottom')
+            # Calculate position manually to avoid Mock object arithmetic
+            x_pos = bar.get_x() + bar.get_width() / 2.0
+            ax1.text(x_pos, height, f'{time_val:.3f}s', ha='center', va='bottom')
         
         # Memory usage comparison
         if any(mem > 0 for mem in memory_usage):
@@ -462,14 +478,14 @@ class ResultVisualizer:
     def _plot_backend_accuracy_comparison(self, backend_results: dict[str, Any]) -> Figure:
         """Plot accuracy comparison between backends."""
         
-        fig, ax = plt.subplots(figsize=self.config.figure_size)
+        fig, axes = plt.subplots(figsize=self.config.figure_size)
         
         # Calculate distribution similarities (simplified)
         backend_names = list(backend_results.keys())
         if len(backend_names) < 2:
-            ax.text(0.5, 0.5, 'Need at least 2 backends for comparison', 
-                   transform=ax.transAxes, ha='center', va='center')
-            ax.set_title('Backend Accuracy Comparison')
+            axes.text(0.5, 0.5, 'Need at least 2 backends for comparison',
+                   transform=axes.transAxes, ha='center', va='center')
+            axes.set_title('Backend Accuracy Comparison')
             return fig
         
         # Use first backend as reference
@@ -483,11 +499,11 @@ class ResultVisualizer:
             )
             similarities.append(similarity)
         
-        ax.bar(backend_names[1:], similarities)
-        ax.set_ylabel('Similarity to Reference')
-        ax.set_title(f'Distribution Similarity (Reference: {reference_backend})')
-        ax.tick_params(axis='x', rotation=45)
-        ax.set_ylim(0, 1)
+        axes.bar(backend_names[1:], similarities)
+        axes.set_ylabel('Similarity to Reference')
+        axes.set_title(f'Distribution Similarity (Reference: {reference_backend})')
+        axes.tick_params(axis='x', rotation=45)
+        axes.set_ylim(0, 1)
         
         plt.tight_layout()
         return fig

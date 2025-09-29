@@ -218,20 +218,42 @@ class PerformanceRegressionDetector:
     
     def _store_metric_db(self, metric: PerformanceMetric):
         """Store metric in database."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
-                INSERT INTO performance_metrics 
-                (metric_type, value, timestamp, backend, circuit_hash, metadata)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                metric.metric_type.value,
-                metric.value,
-                metric.timestamp,
-                metric.backend,
-                metric.circuit_hash,
-                json.dumps(metric.metadata)
-            ))
-            conn.commit()
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("""
+                    INSERT INTO performance_metrics
+                    (metric_type, value, timestamp, backend, circuit_hash, metadata)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (
+                    metric.metric_type.value,
+                    metric.value,
+                    metric.timestamp,
+                    metric.backend,
+                    metric.circuit_hash,
+                    json.dumps(metric.metadata)
+                ))
+                conn.commit()
+        except sqlite3.OperationalError as e:
+            if "no such table" in str(e):
+                # Initialize database if tables don't exist
+                self._init_database()
+                # Retry the operation
+                with sqlite3.connect(self.db_path) as conn:
+                    conn.execute("""
+                        INSERT INTO performance_metrics
+                        (metric_type, value, timestamp, backend, circuit_hash, metadata)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    """, (
+                        metric.metric_type.value,
+                        metric.value,
+                        metric.timestamp,
+                        metric.backend,
+                        metric.circuit_hash,
+                        json.dumps(metric.metadata)
+                    ))
+                    conn.commit()
+            else:
+                raise
     
     def _hash_circuit(self, circuit: QuantumCircuit) -> str:
         """Generate a hash for a quantum circuit based on its structure."""
@@ -494,28 +516,34 @@ class PerformanceRegressionDetector:
     
     def _load_baselines(self):
         """Load existing baselines from database."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("""
-                SELECT baseline_key, mean_value, std_value, median_value,
-                       percentile_95, percentile_99, sample_count, last_updated
-                FROM statistical_baselines
-            """)
-            
-            for row in cursor.fetchall():
-                baseline_key = row[0]
-                baseline = StatisticalBaseline(
-                    mean=row[1],
-                    std=row[2], 
-                    median=row[3],
-                    percentile_95=row[4],
-                    percentile_99=row[5],
-                    sample_count=row[6],
-                    last_updated=row[7]
-                )
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute("""
+                    SELECT baseline_key, mean_value, std_value, median_value,
+                           percentile_95, percentile_99, sample_count, last_updated
+                    FROM statistical_baselines
+                """)
                 
-                self.baselines[baseline_key] = baseline
-        
-        logger.info(f"Loaded {len(self.baselines)} baselines from database")
+                for row in cursor.fetchall():
+                    baseline_key = row[0]
+                    baseline = StatisticalBaseline(
+                        mean=row[1],
+                        std=row[2],
+                        median=row[3],
+                        percentile_95=row[4],
+                        percentile_99=row[5],
+                        sample_count=row[6],
+                        last_updated=row[7]
+                    )
+                    
+                    self.baselines[baseline_key] = baseline
+            
+            logger.info(f"Loaded {len(self.baselines)} baselines from database")
+        except sqlite3.OperationalError as e:
+            if "no such table" in str(e):
+                logger.info("No baselines table found, skipping load")
+                return
+            raise
     
     def start_monitoring(self, check_interval: float = 300.0):
         """Start background monitoring thread."""

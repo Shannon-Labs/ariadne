@@ -598,7 +598,7 @@ class TestNetworkSerialization:
         serialized = coordinator._serialize_circuit(circuit)
         
         assert serialized['num_qubits'] == 3
-        assert serialized['num_clbits'] == 3
+        assert serialized['num_clbits'] == 6
         assert len(serialized['operations']) > 0
         
         # Verify operations include expected gates

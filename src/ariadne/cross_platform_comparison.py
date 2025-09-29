@@ -117,8 +117,15 @@ class SystemProfiler:
         
         # Get CPU information
         cpu_count = psutil.cpu_count(logical=True)
-        cpu_freq = psutil.cpu_freq()
-        cpu_frequency = cpu_freq.current if cpu_freq else 0.0
+        
+        # Handle CPU frequency gracefully on macOS
+        cpu_frequency = 0.0
+        try:
+            cpu_freq = psutil.cpu_freq()
+            cpu_frequency = cpu_freq.current if cpu_freq else 0.0
+        except (FileNotFoundError, AttributeError):
+            # Fallback for macOS or systems without cpu_freq
+            cpu_frequency = 0.0
         
         # Get memory information
         memory = psutil.virtual_memory()
@@ -194,6 +201,7 @@ class SystemProfiler:
         
         try:
             # Try Apple Metal detection on macOS
+            import platform
             if platform.system() == "Darwin":
                 import Metal  # type: ignore
                 gpu_info["metal"] = {"available": True}
