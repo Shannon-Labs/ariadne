@@ -10,16 +10,14 @@ from __future__ import annotations
 
 import json
 import time
-import warnings
-from dataclasses import dataclass, asdict
+from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any, Callable
-import numpy as np
-from abc import ABC, abstractmethod
+from typing import Any
 
+import numpy as np
 from qiskit import QuantumCircuit
-from qiskit.quantum_info import Statevector, state_fidelity
 
 
 @dataclass
@@ -28,8 +26,8 @@ class ValidationResult:
     test_name: str
     passed: bool
     score: float  # 0-1 where 1 is perfect
-    details: Dict[str, Any]
-    error_message: Optional[str] = None
+    details: dict[str, Any]
+    error_message: str | None = None
     timestamp: str = ""
     
     def __post_init__(self):
@@ -131,7 +129,7 @@ class AccuracyValidationTest(ValidationTest):
                 error_message=str(e)
             )
     
-    def _create_test_circuits(self) -> List[Tuple[QuantumCircuit, np.ndarray]]:
+    def _create_test_circuits(self) -> list[tuple[QuantumCircuit, np.ndarray]]:
         """Create test circuits with known exact results."""
         test_cases = []
         
@@ -169,7 +167,7 @@ class AccuracyValidationTest(ValidationTest):
         
         return test_cases
     
-    def _calculate_fidelity(self, counts: Dict[str, int], expected_state: np.ndarray, 
+    def _calculate_fidelity(self, counts: dict[str, int], expected_state: np.ndarray, 
                           num_qubits: int) -> float:
         """Calculate fidelity between measurement counts and expected state."""
         # Convert counts to probability distribution
@@ -231,7 +229,7 @@ class PerformanceStabilityTest(ValidationTest):
             
             reference_counts = None
             
-            for i in range(num_runs):
+            for _i in range(num_runs):
                 start_time = time.time()
                 counts = backend.simulate(circuit, shots=1000)
                 execution_time = time.time() - start_time
@@ -285,8 +283,8 @@ class PerformanceStabilityTest(ValidationTest):
         circuit.measure_all()
         return circuit
     
-    def _calculate_consistency(self, counts1: Dict[str, int], 
-                             counts2: Dict[str, int]) -> float:
+    def _calculate_consistency(self, counts1: dict[str, int], 
+                             counts2: dict[str, int]) -> float:
         """Calculate consistency between two measurement results."""
         total1 = sum(counts1.values())
         total2 = sum(counts2.values())
@@ -345,7 +343,7 @@ class ScalabilityTest(ValidationTest):
                 
                 try:
                     start_time = time.time()
-                    counts = backend.simulate(circuit, shots=100)  # Fewer shots for speed
+                    backend.simulate(circuit, shots=100)  # Fewer shots for speed
                     execution_time = time.time() - start_time
                     
                     execution_times.append(execution_time)
@@ -397,7 +395,7 @@ class ScalabilityTest(ValidationTest):
         circuit = QuantumCircuit(num_qubits)
         
         # Add layers of gates for realistic complexity
-        for layer in range(3):
+        for _layer in range(3):
             # Single-qubit gates
             for i in range(num_qubits):
                 circuit.ry(np.pi/4, i)
@@ -409,7 +407,7 @@ class ScalabilityTest(ValidationTest):
         circuit.measure_all()
         return circuit
     
-    def _analyze_scaling(self, qubits: List[int], times: List[float]) -> float:
+    def _analyze_scaling(self, qubits: list[int], times: list[float]) -> float:
         """Analyze scaling behavior and return score."""
         if len(qubits) < 2:
             return 0.0
@@ -495,7 +493,7 @@ class ErrorHandlingTest(ValidationTest):
                     elif expected_behavior == "should_succeed":
                         if can_sim:
                             # Try actual simulation
-                            counts = backend.simulate(circuit, shots=100)
+                            backend.simulate(circuit, shots=100)
                             passed_tests += 1
                             test_details[test_name] = "PASS - Successful simulation"
                         else:
@@ -531,7 +529,7 @@ class ErrorHandlingTest(ValidationTest):
                 error_message=str(e)
             )
     
-    def _create_error_test_cases(self) -> List[Tuple[str, QuantumCircuit, str]]:
+    def _create_error_test_cases(self) -> list[tuple[str, QuantumCircuit, str]]:
         """Create test cases for error handling."""
         test_cases = []
         
@@ -565,7 +563,7 @@ class ErrorHandlingTest(ValidationTest):
 class PerformanceValidationFramework:
     """Main framework for performance validation and testing."""
     
-    def __init__(self, output_dir: Optional[str] = None):
+    def __init__(self, output_dir: str | None = None):
         """Initialize validation framework."""
         self.output_dir = Path(output_dir) if output_dir else Path("validation_results")
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -578,8 +576,8 @@ class PerformanceValidationFramework:
             'error_handling': ErrorHandlingTest()
         }
     
-    def run_validation_suite(self, backend_names: Optional[List[str]] = None,
-                           test_names: Optional[List[str]] = None) -> Dict[str, Dict[str, ValidationResult]]:
+    def run_validation_suite(self, backend_names: list[str] | None = None,
+                           test_names: list[str] | None = None) -> dict[str, dict[str, ValidationResult]]:
         """Run validation suite on specified backends."""
         
         # Get available backends if not specified
@@ -587,14 +585,14 @@ class PerformanceValidationFramework:
             try:
                 from ..backends.universal_interface import list_backends
                 backend_names = list_backends()
-            except:
+            except Exception:
                 backend_names = ['qiskit']
         
         # Use all tests if not specified
         if test_names is None:
             test_names = list(self.tests.keys())
         
-        print(f"🧪 Running validation suite")
+        print("🧪 Running validation suite")
         print(f"🔧 Backends: {', '.join(backend_names)}")
         print(f"📋 Tests: {', '.join(test_names)}")
         print()
@@ -631,7 +629,7 @@ class PerformanceValidationFramework:
         
         return all_results
     
-    def _save_validation_results(self, results: Dict[str, Dict[str, ValidationResult]]):
+    def _save_validation_results(self, results: dict[str, dict[str, ValidationResult]]):
         """Save validation results to file."""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"validation_results_{timestamp}.json"
@@ -649,7 +647,7 @@ class PerformanceValidationFramework:
         
         print(f"💾 Validation results saved to: {filepath}")
     
-    def generate_validation_report(self, results: Dict[str, Dict[str, ValidationResult]]) -> str:
+    def generate_validation_report(self, results: dict[str, dict[str, ValidationResult]]) -> str:
         """Generate comprehensive validation report."""
         
         report_lines = []
@@ -735,19 +733,19 @@ class PerformanceValidationFramework:
         return '\n'.join(report_lines)
 
 
-def run_quick_validation() -> Dict[str, Dict[str, ValidationResult]]:
+def run_quick_validation() -> dict[str, dict[str, ValidationResult]]:
     """Run quick validation on all available backends."""
     framework = PerformanceValidationFramework()
     return framework.run_validation_suite(test_names=['accuracy', 'error_handling'])
 
 
-def run_full_validation() -> Dict[str, Dict[str, ValidationResult]]:
+def run_full_validation() -> dict[str, dict[str, ValidationResult]]:
     """Run full validation suite."""
     framework = PerformanceValidationFramework()
     return framework.run_validation_suite()
 
 
-def validate_backend(backend_name: str) -> Dict[str, ValidationResult]:
+def validate_backend(backend_name: str) -> dict[str, ValidationResult]:
     """Validate a specific backend."""
     framework = PerformanceValidationFramework()
     results = framework.run_validation_suite(backend_names=[backend_name])

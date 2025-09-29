@@ -5,22 +5,24 @@ This module provides comprehensive performance validation tests and benchmarks
 to ensure quantum backends meet performance requirements and detect regressions.
 """
 
-import pytest
-import time
 import statistics
-import threading
-from typing import Dict, List, Optional, Any
-import psutil
-import numpy as np
+import time
+from typing import Any
 
+import numpy as np
+import psutil
+import pytest
 from qiskit import QuantumCircuit
 from qiskit.circuit.random import random_circuit
 
 # Import modules to test
 try:
     from ariadne.benchmarks import (
-        BenchmarkRunner, BenchmarkResult, CircuitBenchmark,
-        PerformanceMetrics, create_standard_benchmarks
+        BenchmarkResult,
+        BenchmarkRunner,
+        CircuitBenchmark,
+        PerformanceMetrics,
+        create_standard_benchmarks,
     )
     BENCHMARKS_AVAILABLE = True
 except ImportError:
@@ -28,16 +30,17 @@ except ImportError:
 
 try:
     from ariadne.regression_detection import (
-        PerformanceRegressionDetector, MetricType, record_performance_metric
+        MetricType,
+        PerformanceRegressionDetector,
+        record_performance_metric,
     )
     REGRESSION_DETECTION_AVAILABLE = True
 except ImportError:
     REGRESSION_DETECTION_AVAILABLE = False
 
 try:
-    from ariadne.cross_platform_comparison import (
-        BenchmarkRunner as CrossPlatformRunner, run_quick_comparison
-    )
+    from ariadne.cross_platform_comparison import BenchmarkRunner as CrossPlatformRunner
+    from ariadne.cross_platform_comparison import run_quick_comparison
     CROSS_PLATFORM_AVAILABLE = True
 except ImportError:
     CROSS_PLATFORM_AVAILABLE = False
@@ -60,7 +63,7 @@ class PerformanceValidator:
             }
         }
     
-    def validate_backend_performance(self, backend_name: str, results: List[Dict]) -> Dict[str, Any]:
+    def validate_backend_performance(self, backend_name: str, results: list[dict]) -> dict[str, Any]:
         """Validate backend performance against requirements."""
         if backend_name not in self.requirements:
             return {"status": "skipped", "reason": "No requirements defined"}
@@ -166,7 +169,7 @@ class TestPerformanceBenchmarks:
         
         # Simulate memory-intensive operation
         large_arrays = []
-        for i in range(10):
+        for _i in range(10):
             # Create large arrays to increase memory usage
             array = np.random.random((1000, 1000))
             large_arrays.append(array)
@@ -203,7 +206,7 @@ class TestRegressionDetection:
         detector = PerformanceRegressionDetector(db_path=":memory:")
         
         # Record baseline metrics (good performance)
-        for i in range(15):  # Need minimum samples
+        for _i in range(15):  # Need minimum samples
             detector.record_metric(
                 MetricType.EXECUTION_TIME,
                 1.0 + np.random.normal(0, 0.1),  # ~1 second with small variance
@@ -357,7 +360,7 @@ class TestScalabilityBenchmarks:
             # Time should generally increase with more qubits
             # (Allow some variance due to circuit structure differences)
             time_ratio = curr_time / prev_time
-            qubit_ratio = curr_qubits / prev_qubits
+            curr_qubits / prev_qubits
             
             # Exponential scaling means time ratio should be > qubit ratio
             assert time_ratio > 0.5, f"Performance degraded too much: {time_ratio}"

@@ -5,12 +5,13 @@ This module ensures that the router gracefully handles backend failures
 and provides meaningful error messages and fallback behavior.
 """
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from qiskit import QuantumCircuit
 
-from ariadne.router import EnhancedQuantumRouter, BackendType, simulate
 from ariadne.backends.metal_backend import MetalBackend
+from ariadne.router import BackendType, EnhancedQuantumRouter, simulate
 
 
 class TestErrorHandling:
@@ -179,6 +180,6 @@ class TestErrorHandling:
                 # Should have warnings about experimental support
                 if result.warnings:
                     assert any("experimental" in warning.lower() for warning in result.warnings)
-            except:
+            except Exception:
                 # If Metal backend fails, that's also valid behavior
                 pass

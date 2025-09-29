@@ -9,17 +9,11 @@ computing algorithms across all supported backends.
 import numpy as np
 import pytest
 from qiskit import QuantumCircuit
-from qiskit.circuit.library import (
-    EfficientSU2,
-    QAOAAnsatz,
-    RealAmplitudes,
-    TwoLocal,
-)
 from qiskit.circuit.random import random_circuit
 from qiskit.quantum_info import Statevector, state_fidelity
 
 from ariadne import simulate
-from ariadne.router import EnhancedQuantumRouter, BackendType
+from ariadne.router import BackendType, EnhancedQuantumRouter
 
 
 class TestQuantumAlgorithms:
@@ -124,7 +118,7 @@ class TestQuantumAlgorithms:
         """Test simplified quantum phase estimation."""
         # Test with 2 counting qubits + 1 eigenstate qubit
         n_counting = 2
-        n_total = n_counting + 1
+        n_counting + 1
         
         qc = self._create_qpe_circuit(n_counting)
         
@@ -580,7 +574,7 @@ class TestLargeScaleAlgorithms:
         qc = QuantumCircuit(n_qubits, n_qubits)
         
         # Multiple layers of Clifford operations
-        for layer in range(5):
+        for _layer in range(5):
             # H gates
             for i in range(0, n_qubits, 2):
                 qc.h(i)

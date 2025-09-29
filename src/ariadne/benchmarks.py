@@ -8,24 +8,21 @@ regression detection, and cross-platform comparisons.
 
 from __future__ import annotations
 
-import json
-import psutil
-import time
-import platform
 import gc
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field, asdict
+import json
+import platform
+import time
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Callable
-from datetime import datetime, timedelta
+from typing import Any
 
 import numpy as np
+import psutil
 from qiskit import QuantumCircuit
 
 # Import Ariadne components
-from .router import BackendType
 from .simulation import QuantumSimulator, SimulationOptions
-from .config import get_config
 from .visualization import ResultVisualizer, VisualizationConfig
 
 
@@ -34,9 +31,9 @@ class BenchmarkConfig:
     """Configuration for benchmark execution."""
     
     # Test circuits
-    qubit_range: Tuple[int, int, int] = (4, 16, 2)  # (start, stop, step)
-    depth_range: Tuple[int, int, int] = (5, 50, 5)
-    circuit_types: List[str] = field(default_factory=lambda: [
+    qubit_range: tuple[int, int, int] = (4, 16, 2)  # (start, stop, step)
+    depth_range: tuple[int, int, int] = (5, 50, 5)
+    circuit_types: list[str] = field(default_factory=lambda: [
         "random_clifford", "random_general", "ghz_state", 
         "qft", "vqe_ansatz", "qaoa_maxcut"
     ])
@@ -47,7 +44,7 @@ class BenchmarkConfig:
     timeout_seconds: float = 300.0
     
     # Backend selection
-    backends_to_test: List[str] = field(default_factory=lambda: [
+    backends_to_test: list[str] = field(default_factory=lambda: [
         "stim", "qiskit", "metal", "cuda", "tensor_network", "ddsim"
     ])
     
@@ -81,14 +78,14 @@ class BenchmarkResult:
     
     # Success metrics
     success: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
     
     # System information
-    platform_info: Dict[str, str] = field(default_factory=dict)
+    platform_info: dict[str, str] = field(default_factory=dict)
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     
     # Circuit analysis
-    circuit_analysis: Dict[str, Any] = field(default_factory=dict)
+    circuit_analysis: dict[str, Any] = field(default_factory=dict)
     
     # Additional metrics
     throughput_shots_per_sec: float = 0.0
@@ -109,13 +106,13 @@ class BenchmarkSuite:
     config: BenchmarkConfig
     
     # Results
-    results: List[BenchmarkResult] = field(default_factory=list)
+    results: list[BenchmarkResult] = field(default_factory=list)
     
     # Summary statistics
-    summary: Dict[str, Any] = field(default_factory=dict)
+    summary: dict[str, Any] = field(default_factory=dict)
     
     # System information
-    system_info: Dict[str, str] = field(default_factory=dict)
+    system_info: dict[str, str] = field(default_factory=dict)
 
 
 class CircuitGenerator:
@@ -209,7 +206,7 @@ class CircuitGenerator:
             qc.h(i)
         
         # Add parameterized layers
-        for layer in range(depth // 2):
+        for _layer in range(depth // 2):
             # Entangling layer
             for i in range(0, num_qubits - 1, 2):
                 qc.cx(i, i + 1)
@@ -231,7 +228,7 @@ class CircuitGenerator:
             qc.h(i)
         
         # QAOA layers
-        for layer in range(depth // 4):
+        for _layer in range(depth // 4):
             # Problem Hamiltonian
             for i in range(num_qubits - 1):
                 qc.cx(i, i + 1)
@@ -249,7 +246,7 @@ class CircuitGenerator:
 class PerformanceBenchmarker:
     """Automated performance benchmarking system."""
     
-    def __init__(self, config: Optional[BenchmarkConfig] = None):
+    def __init__(self, config: BenchmarkConfig | None = None):
         """Initialize benchmarker with configuration."""
         self.config = config or BenchmarkConfig()
         self.circuit_generator = CircuitGenerator()
@@ -317,7 +314,7 @@ class PerformanceBenchmarker:
         
         return suite
     
-    def run_backend_comparison(self, circuit: QuantumCircuit, backends: Optional[List[str]] = None) -> Dict[str, BenchmarkResult]:
+    def run_backend_comparison(self, circuit: QuantumCircuit, backends: list[str] | None = None) -> dict[str, BenchmarkResult]:
         """Run comparative benchmark across backends for a specific circuit."""
         
         backends = backends or self.config.backends_to_test
@@ -338,7 +335,7 @@ class PerformanceBenchmarker:
         
         return results
     
-    def run_scaling_benchmark(self, circuit_type: str, backend: str, max_qubits: int = 20) -> List[BenchmarkResult]:
+    def run_scaling_benchmark(self, circuit_type: str, backend: str, max_qubits: int = 20) -> list[BenchmarkResult]:
         """Run scaling benchmark for a specific circuit type and backend."""
         
         results = []
@@ -363,7 +360,7 @@ class PerformanceBenchmarker:
         
         return results
     
-    def _generate_test_cases(self) -> List[Dict[str, Any]]:
+    def _generate_test_cases(self) -> list[dict[str, Any]]:
         """Generate all test cases for benchmark suite."""
         
         test_cases = []
@@ -406,7 +403,7 @@ class PerformanceBenchmarker:
         
         return generator_map[circuit_type](num_qubits, depth)
     
-    def _run_single_benchmark(self, test_case: Dict[str, Any]) -> BenchmarkResult:
+    def _run_single_benchmark(self, test_case: dict[str, Any]) -> BenchmarkResult:
         """Run a single benchmark test."""
         
         circuit = test_case['circuit']
@@ -488,7 +485,7 @@ class PerformanceBenchmarker:
                 platform_info=self.system_info
             )
     
-    def _collect_system_info(self) -> Dict[str, str]:
+    def _collect_system_info(self) -> dict[str, str]:
         """Collect system information for benchmarking context."""
         
         return {
@@ -501,7 +498,7 @@ class PerformanceBenchmarker:
             'memory_available_gb': f"{psutil.virtual_memory().available / (1024**3):.2f}"
         }
     
-    def _generate_summary_statistics(self, results: List[BenchmarkResult]) -> Dict[str, Any]:
+    def _generate_summary_statistics(self, results: list[BenchmarkResult]) -> dict[str, Any]:
         """Generate summary statistics from benchmark results."""
         
         successful_results = [r for r in results if r.success]
@@ -597,7 +594,7 @@ class PerformanceBenchmarker:
         report_file = self.config.output_dir / f"{suite.suite_id}_report.md"
         self._create_text_report(suite, report_file)
     
-    def _create_performance_plots(self, results: List[BenchmarkResult], visualizer: ResultVisualizer) -> None:
+    def _create_performance_plots(self, results: list[BenchmarkResult], visualizer: ResultVisualizer) -> None:
         """Create performance visualization plots."""
         
         # This would create various performance plots
@@ -608,7 +605,7 @@ class PerformanceBenchmarker:
         """Create markdown report."""
         
         with open(report_file, 'w') as f:
-            f.write(f"# Ariadne Benchmark Report\n\n")
+            f.write("# Ariadne Benchmark Report\n\n")
             f.write(f"**Suite ID:** {suite.suite_id}\n")
             f.write(f"**Date:** {suite.start_time}\n")
             f.write(f"**Duration:** {suite.total_duration:.2f} seconds\n\n")
@@ -638,7 +635,7 @@ class PerformanceBenchmarker:
 
 
 # Convenience functions
-def run_quick_benchmark(backends: Optional[List[str]] = None) -> BenchmarkSuite:
+def run_quick_benchmark(backends: list[str] | None = None) -> BenchmarkSuite:
     """Run a quick benchmark with default settings."""
     
     config = BenchmarkConfig(
@@ -653,7 +650,7 @@ def run_quick_benchmark(backends: Optional[List[str]] = None) -> BenchmarkSuite:
     return benchmarker.run_full_benchmark_suite()
 
 
-def compare_backends_performance(circuit: QuantumCircuit, backends: Optional[List[str]] = None) -> Dict[str, BenchmarkResult]:
+def compare_backends_performance(circuit: QuantumCircuit, backends: list[str] | None = None) -> dict[str, BenchmarkResult]:
     """Quick backend comparison for a specific circuit."""
     
     benchmarker = PerformanceBenchmarker()

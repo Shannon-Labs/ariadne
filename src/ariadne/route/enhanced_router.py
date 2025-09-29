@@ -8,15 +8,16 @@ from __future__ import annotations
 
 import math
 import platform
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Any
-from abc import ABC, abstractmethod
+from typing import Any
 
 from qiskit import QuantumCircuit
-from ..types import BackendType, RoutingDecision
+
 from ..route.analyze import analyze_circuit, is_clifford_circuit
 from ..route.mps_analyzer import should_use_mps
+from ..types import BackendType, RoutingDecision
 
 
 class RouterType(Enum):
@@ -62,7 +63,7 @@ class UserContext:
     workflow_type: WorkflowType
     hardware_profile: HardwareProfile
     performance_preferences: PerformancePreferences
-    preferred_backends: List[BackendType] = field(default_factory=list)
+    preferred_backends: list[BackendType] = field(default_factory=list)
 
 
 @dataclass
@@ -81,7 +82,7 @@ class QuantumRouterStrategy(ABC):
     
     @abstractmethod
     def score_backend(self, circuit: QuantumCircuit, backend: BackendType, 
-                     context: UserContext, analysis: Dict[str, Any]) -> RouteScore:
+                     context: UserContext, analysis: dict[str, Any]) -> RouteScore:
         pass
 
 
@@ -89,7 +90,7 @@ class SpeedOptimizerStrategy(QuantumRouterStrategy):
     """Optimize for fastest execution."""
     
     def score_backend(self, circuit: QuantumCircuit, backend: BackendType, 
-                     context: UserContext, analysis: Dict[str, Any]) -> RouteScore:
+                     context: UserContext, analysis: dict[str, Any]) -> RouteScore:
         
         base_speeds = {
             BackendType.STIM: 10.0,
@@ -130,7 +131,7 @@ class AccuracyOptimizerStrategy(QuantumRouterStrategy):
     """Optimize for numerical accuracy."""
     
     def score_backend(self, circuit: QuantumCircuit, backend: BackendType, 
-                     context: UserContext, analysis: Dict[str, Any]) -> RouteScore:
+                     context: UserContext, analysis: dict[str, Any]) -> RouteScore:
         
         base_accuracy = {
             BackendType.STIM: 10.0,
@@ -162,7 +163,7 @@ class HybridOptimizerStrategy(QuantumRouterStrategy):
     """Multi-objective optimization."""
     
     def score_backend(self, circuit: QuantumCircuit, backend: BackendType, 
-                     context: UserContext, analysis: Dict[str, Any]) -> RouteScore:
+                     context: UserContext, analysis: dict[str, Any]) -> RouteScore:
         
         speed_strategy = SpeedOptimizerStrategy()
         accuracy_strategy = AccuracyOptimizerStrategy()
@@ -201,7 +202,7 @@ class EnhancedQuantumRouter:
         
         # Phase 1: Prioritized Filter Chain (Specialized Triage)
         # Order matters: fastest/most specialized first.
-        self._specialized_filters: List[Tuple[BackendType, Any]] = [
+        self._specialized_filters: list[tuple[BackendType, Any]] = [
             (BackendType.STIM, is_clifford_circuit),
             (BackendType.MPS, should_use_mps),
             # Add future specialized analyzers here (e.g., Stabilizer)
@@ -225,7 +226,7 @@ class EnhancedQuantumRouter:
         )
     
     def select_optimal_backend(self, circuit: QuantumCircuit, 
-                             strategy: Optional[RouterType] = None) -> RoutingDecision:
+                             strategy: RouterType | None = None) -> RoutingDecision:
         """Select optimal backend using specified strategy."""
         
         entropy = self._calculate_entropy(circuit)
@@ -324,5 +325,5 @@ class EnhancedQuantumRouter:
         try:
             import cupy
             return cupy.cuda.runtime.getDeviceCount() > 0
-        except:
+        except Exception:
             return False

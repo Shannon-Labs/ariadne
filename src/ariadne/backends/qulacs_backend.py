@@ -16,12 +16,10 @@ Qulacs Features:
 from __future__ import annotations
 
 import warnings
-from typing import Dict, List, Optional, Tuple, Any
-import numpy as np
+from typing import Any
 
+import numpy as np
 from qiskit import QuantumCircuit
-from qiskit.circuit import Instruction
-from qiskit.circuit.library import standard_gates
 
 
 class QulacsBackend:
@@ -46,7 +44,7 @@ class QulacsBackend:
         if not self.qulacs_available:
             if not allow_cpu_fallback:
                 raise RuntimeError("Qulacs not available and CPU fallback disabled")
-            warnings.warn("Qulacs not available, falling back to Qiskit")
+            warnings.warn("Qulacs not available, falling back to Qiskit", stacklevel=2)
         
         # Check GPU availability
         self.gpu_available = False
@@ -74,10 +72,10 @@ class QulacsBackend:
             test_state = qulacs.QuantumStateGpu(2)
             del test_state
             return True
-        except:
+        except Exception:
             return False
     
-    def simulate(self, circuit: QuantumCircuit, shots: int = 1000) -> Dict[str, int]:
+    def simulate(self, circuit: QuantumCircuit, shots: int = 1000) -> dict[str, int]:
         """
         Simulate quantum circuit using Qulacs.
         
@@ -122,7 +120,7 @@ class QulacsBackend:
             
         except Exception as e:
             if self.allow_cpu_fallback:
-                warnings.warn(f"Qulacs simulation failed: {e}, falling back to Qiskit")
+                warnings.warn(f"Qulacs simulation failed: {e}, falling back to Qiskit", stacklevel=2)
                 return self._simulate_with_qiskit(circuit, shots)
             else:
                 raise
@@ -169,7 +167,7 @@ class QulacsBackend:
         qubit_to_index = {qubit: i for i, qubit in enumerate(circuit.qubits)}
         
         # Convert each instruction
-        for instruction, qubits, clbits in circuit.data:
+        for instruction, qubits, _clbits in circuit.data:
             gate_name = instruction.name.lower()
             qubit_indices = [qubit_to_index[q] for q in qubits]
             
@@ -219,19 +217,18 @@ class QulacsBackend:
             
             else:
                 # Unsupported gate - use decomposition or skip
-                warnings.warn(f"Unsupported gate: {gate_name}, skipping")
+                warnings.warn(f"Unsupported gate: {gate_name}, skipping", stacklevel=2)
         
         return qulacs_circuit
     
-    def _simulate_measurements(self, state, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
+    def _simulate_measurements(self, state, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         """Simulate measurements for circuits with explicit measurement operations."""
         # For now, measure all qubits at the end
         # TODO: Implement proper mid-circuit measurements
         return self._measure_all_qubits(state, circuit.num_qubits, shots)
     
-    def _measure_all_qubits(self, state, num_qubits: int, shots: int) -> Dict[str, int]:
+    def _measure_all_qubits(self, state, num_qubits: int, shots: int) -> dict[str, int]:
         """Measure all qubits and return counts."""
-        import qulacs
         
         counts = {}
         
@@ -249,7 +246,7 @@ class QulacsBackend:
         
         return counts
     
-    def _simulate_with_qiskit(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
+    def _simulate_with_qiskit(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         """Fallback simulation using Qiskit."""
         try:
             from qiskit.providers.basic_provider import BasicProvider
@@ -264,7 +261,7 @@ class QulacsBackend:
         except ImportError:
             raise RuntimeError("Neither Qulacs nor Qiskit BasicProvider available")
     
-    def get_backend_info(self) -> Dict[str, Any]:
+    def get_backend_info(self) -> dict[str, Any]:
         """Get information about the backend configuration."""
         info = {
             'name': 'qulacs',
@@ -286,7 +283,7 @@ class QulacsBackend:
                         mempool = cupy.get_default_memory_pool()
                         info['gpu_memory_used'] = mempool.used_bytes()
                         info['gpu_memory_total'] = mempool.total_bytes()
-                    except:
+                    except Exception:
                         pass
                         
             except Exception:
@@ -305,7 +302,7 @@ class QulacsBackend:
         total_bytes = state_vector_bytes * overhead_factor
         return total_bytes / (1024 * 1024)  # Convert to MB
     
-    def can_simulate(self, circuit: QuantumCircuit) -> Tuple[bool, str]:
+    def can_simulate(self, circuit: QuantumCircuit) -> tuple[bool, str]:
         """
         Check if this backend can simulate the given circuit.
         
@@ -406,9 +403,9 @@ def optimize_circuit_for_qulacs(circuit: QuantumCircuit) -> QuantumCircuit:
     return circuit
 
 
-def benchmark_qulacs_performance(num_qubits_list: List[int], 
+def benchmark_qulacs_performance(num_qubits_list: list[int], 
                                 num_gates_per_qubit: int = 10,
-                                shots: int = 1000) -> Dict[str, Any]:
+                                shots: int = 1000) -> dict[str, Any]:
     """
     Benchmark Qulacs performance across different circuit sizes.
     
@@ -421,6 +418,7 @@ def benchmark_qulacs_performance(num_qubits_list: List[int],
         Benchmark results dictionary
     """
     import time
+
     from qiskit.circuit.random import random_circuit
     
     results = {
@@ -440,7 +438,7 @@ def benchmark_qulacs_performance(num_qubits_list: List[int],
         try:
             backend_cpu = QulacsBackend(use_gpu=False)
             start_time = time.time()
-            counts = backend_cpu.simulate(circuit, shots)
+            backend_cpu.simulate(circuit, shots)
             cpu_time = time.time() - start_time
             results['qulacs_cpu'][num_qubits] = {
                 'time': cpu_time,
@@ -458,7 +456,7 @@ def benchmark_qulacs_performance(num_qubits_list: List[int],
         try:
             backend_gpu = QulacsBackend(use_gpu=True)
             start_time = time.time()
-            counts = backend_gpu.simulate(circuit, shots)
+            backend_gpu.simulate(circuit, shots)
             gpu_time = time.time() - start_time
             results['qulacs_gpu'][num_qubits] = {
                 'time': gpu_time,
@@ -477,7 +475,7 @@ def benchmark_qulacs_performance(num_qubits_list: List[int],
             backend_qiskit = QulacsBackend(use_gpu=False, allow_cpu_fallback=True)
             backend_qiskit.qulacs_available = False  # Force Qiskit fallback
             start_time = time.time()
-            counts = backend_qiskit.simulate(circuit, shots)
+            backend_qiskit.simulate(circuit, shots)
             qiskit_time = time.time() - start_time
             results['qiskit'][num_qubits] = {
                 'time': qiskit_time,

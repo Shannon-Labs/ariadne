@@ -6,20 +6,17 @@ quantum backend performance over time and alert when significant performance
 degradations are detected.
 """
 
-import time
+import hashlib
 import json
+import logging
 import sqlite3
 import statistics
+import threading
+import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple, Union
 from enum import Enum
 from pathlib import Path
-import threading
-import logging
-import hashlib
-from datetime import datetime, timedelta
-import pickle
-import numpy as np
+from typing import Any
 
 from qiskit import QuantumCircuit
 
@@ -52,7 +49,7 @@ class PerformanceMetric:
     timestamp: float
     backend: str
     circuit_hash: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -68,7 +65,7 @@ class RegressionAlert:
     detection_timestamp: float
     confidence: float
     description: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -101,13 +98,13 @@ class PerformanceRegressionDetector:
         self.confidence_threshold = confidence_threshold
         
         # In-memory caches
-        self.baselines: Dict[str, StatisticalBaseline] = {}
-        self.recent_metrics: Dict[str, List[PerformanceMetric]] = {}
-        self.alerts: List[RegressionAlert] = []
+        self.baselines: dict[str, StatisticalBaseline] = {}
+        self.recent_metrics: dict[str, list[PerformanceMetric]] = {}
+        self.alerts: list[RegressionAlert] = []
         
         # Threading
         self._lock = threading.Lock()
-        self._monitoring_thread: Optional[threading.Thread] = None
+        self._monitoring_thread: threading.Thread | None = None
         self._running = False
         
         # Initialize database
@@ -180,9 +177,9 @@ class PerformanceRegressionDetector:
         metric_type: MetricType,
         value: float,
         backend: str,
-        circuit: Optional[QuantumCircuit] = None,
-        circuit_hash: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        circuit: QuantumCircuit | None = None,
+        circuit_hash: str | None = None,
+        metadata: dict[str, Any] | None = None
     ):
         """Record a performance metric measurement."""
         if circuit is not None:
@@ -391,7 +388,7 @@ class PerformanceRegressionDetector:
         metric_type: MetricType,
         backend: str,
         circuit_hash: str
-    ) -> Optional[StatisticalBaseline]:
+    ) -> StatisticalBaseline | None:
         """Get or compute baseline for a metric."""
         with self._lock:
             if baseline_key in self.baselines:
@@ -413,7 +410,7 @@ class PerformanceRegressionDetector:
         metric_type: MetricType,
         backend: str,
         circuit_hash: str
-    ) -> Optional[StatisticalBaseline]:
+    ) -> StatisticalBaseline | None:
         """Compute statistical baseline from historical data."""
         # Get historical data from database
         cutoff_time = time.time() - (self.baseline_window_days * 86400)
@@ -611,9 +608,9 @@ class PerformanceRegressionDetector:
     def get_recent_alerts(
         self,
         hours: int = 24,
-        severity: Optional[RegressionSeverity] = None,
-        backend: Optional[str] = None
-    ) -> List[RegressionAlert]:
+        severity: RegressionSeverity | None = None,
+        backend: str | None = None
+    ) -> list[RegressionAlert]:
         """Get recent regression alerts."""
         cutoff_time = time.time() - (hours * 3600)
         
@@ -658,7 +655,7 @@ class PerformanceRegressionDetector:
             
             return alerts
     
-    def get_performance_summary(self, backend: str, hours: int = 24) -> Dict[str, Any]:
+    def get_performance_summary(self, backend: str, hours: int = 24) -> dict[str, Any]:
         """Get performance summary for a backend."""
         cutoff_time = time.time() - (hours * 3600)
         
@@ -710,7 +707,7 @@ class PerformanceRegressionDetector:
             )
             conn.commit()
     
-    def get_baseline_info(self, metric_type: MetricType, backend: str, circuit_hash: str) -> Optional[Dict[str, Any]]:
+    def get_baseline_info(self, metric_type: MetricType, backend: str, circuit_hash: str) -> dict[str, Any] | None:
         """Get baseline information for a specific metric."""
         baseline_key = self._get_baseline_key(metric_type, backend, circuit_hash)
         baseline = self._get_baseline(baseline_key, metric_type, backend, circuit_hash)
@@ -734,7 +731,7 @@ class PerformanceRegressionDetector:
 
 
 # Global instance for easy access
-_global_detector: Optional[PerformanceRegressionDetector] = None
+_global_detector: PerformanceRegressionDetector | None = None
 
 def get_regression_detector() -> PerformanceRegressionDetector:
     """Get the global regression detector instance."""
@@ -748,9 +745,9 @@ def record_performance_metric(
     metric_type: MetricType,
     value: float,
     backend: str,
-    circuit: Optional[QuantumCircuit] = None,
-    circuit_hash: Optional[str] = None,
-    metadata: Optional[Dict[str, Any]] = None
+    circuit: QuantumCircuit | None = None,
+    circuit_hash: str | None = None,
+    metadata: dict[str, Any] | None = None
 ):
     """Convenience function to record a performance metric."""
     detector = get_regression_detector()

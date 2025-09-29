@@ -17,9 +17,9 @@ Intel-QS Features:
 from __future__ import annotations
 
 import warnings
-from typing import Dict, List, Optional, Tuple, Any, Union
-import numpy as np
+from typing import Any
 
+import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
 
@@ -28,9 +28,9 @@ class IntelQuantumSimulatorBackend:
     """Intel Quantum Simulator backend for high-performance simulation."""
     
     def __init__(self, 
-                 num_threads: Optional[int] = None,
+                 num_threads: int | None = None,
                  use_mkl: bool = True,
-                 memory_limit_gb: Optional[float] = None,
+                 memory_limit_gb: float | None = None,
                  enable_distributed: bool = False):
         """
         Initialize Intel Quantum Simulator backend.
@@ -49,7 +49,7 @@ class IntelQuantumSimulatorBackend:
         # Check Intel-QS availability
         self.intel_qs_available = self._check_intel_qs_availability()
         if not self.intel_qs_available:
-            warnings.warn("Intel Quantum Simulator not available, using fallback")
+            warnings.warn("Intel Quantum Simulator not available, using fallback", stacklevel=2)
         
         # Initialize simulator configuration
         self._configure_simulator()
@@ -64,7 +64,7 @@ class IntelQuantumSimulatorBackend:
             result = subprocess.run(['which', 'qhipster'], 
                                   capture_output=True, text=True)
             return result.returncode == 0
-        except:
+        except Exception:
             # Alternative: check for Python bindings
             try:
                 # Placeholder import - actual module name may differ
@@ -96,7 +96,7 @@ class IntelQuantumSimulatorBackend:
             # Enable other MKL optimizations
             mkl.set_dynamic(True)
         except ImportError:
-            warnings.warn("Intel MKL not available")
+            warnings.warn("Intel MKL not available", stacklevel=2)
     
     def _set_memory_limit(self):
         """Set memory usage limits."""
@@ -104,7 +104,7 @@ class IntelQuantumSimulatorBackend:
         # Implementation depends on Intel-QS interface
         pass
     
-    def simulate(self, circuit: QuantumCircuit, shots: int = 1000) -> Dict[str, int]:
+    def simulate(self, circuit: QuantumCircuit, shots: int = 1000) -> dict[str, int]:
         """
         Simulate quantum circuit using Intel Quantum Simulator.
         
@@ -132,7 +132,7 @@ class IntelQuantumSimulatorBackend:
             return counts
             
         except Exception as e:
-            warnings.warn(f"Intel-QS simulation failed: {e}, using fallback")
+            warnings.warn(f"Intel-QS simulation failed: {e}, using fallback", stacklevel=2)
             return self._simulate_with_numpy(circuit, shots)
     
     def _convert_to_intel_format(self, circuit: QuantumCircuit):
@@ -161,7 +161,7 @@ class IntelQuantumSimulatorBackend:
         }
         
         # Convert each instruction
-        for instruction, qubits, clbits in circuit.data:
+        for instruction, qubits, _clbits in circuit.data:
             gate_name = instruction.name.lower()
             qubit_indices = [circuit.qubits.index(q) for q in qubits]
             
@@ -208,7 +208,7 @@ class IntelQuantumSimulatorBackend:
             'operations': intel_operations
         }
     
-    def _simulate_with_shots(self, intel_circuit: Dict, shots: int) -> Dict[str, int]:
+    def _simulate_with_shots(self, intel_circuit: dict, shots: int) -> dict[str, int]:
         """Simulate with finite shots using Intel-QS."""
         # Placeholder implementation for Intel-QS simulation
         # Actual implementation would use Intel-QS APIs
@@ -216,12 +216,12 @@ class IntelQuantumSimulatorBackend:
         # For now, use optimized NumPy implementation
         return self._simulate_shots_numpy(intel_circuit, shots)
     
-    def _simulate_exact(self, intel_circuit: Dict) -> Dict[str, int]:
+    def _simulate_exact(self, intel_circuit: dict) -> dict[str, int]:
         """Exact simulation using Intel-QS."""
         # Simulate without shots for exact results
         return self._simulate_with_shots(intel_circuit, 1000)
     
-    def _simulate_with_numpy(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
+    def _simulate_with_numpy(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         """Fallback simulation using optimized NumPy with Intel optimizations."""
         
         # Use Intel-optimized NumPy operations where possible
@@ -232,7 +232,7 @@ class IntelQuantumSimulatorBackend:
         state[0] = 1.0  # |0...0> state
         
         # Apply circuit operations
-        for instruction, qubits, clbits in circuit.data:
+        for instruction, qubits, _clbits in circuit.data:
             if instruction.name in ['measure', 'barrier', 'delay']:
                 continue
             
@@ -248,7 +248,7 @@ class IntelQuantumSimulatorBackend:
         # Sample from final state
         return self._sample_from_state(state, shots)
     
-    def _simulate_shots_numpy(self, intel_circuit: Dict, shots: int) -> Dict[str, int]:
+    def _simulate_shots_numpy(self, intel_circuit: dict, shots: int) -> dict[str, int]:
         """Simulate shots using optimized NumPy implementation."""
         num_qubits = intel_circuit['num_qubits']
         
@@ -265,7 +265,7 @@ class IntelQuantumSimulatorBackend:
         
         return self._sample_from_state(state, shots)
     
-    def _get_gate_matrix(self, instruction) -> Optional[np.ndarray]:
+    def _get_gate_matrix(self, instruction) -> np.ndarray | None:
         """Get gate matrix for Qiskit instruction."""
         gate_matrices = {
             'id': np.eye(2, dtype=np.complex128),
@@ -322,7 +322,7 @@ class IntelQuantumSimulatorBackend:
         
         return None
     
-    def _get_intel_gate_matrix(self, operation: Dict) -> Optional[np.ndarray]:
+    def _get_intel_gate_matrix(self, operation: dict) -> np.ndarray | None:
         """Get gate matrix for Intel-QS operation."""
         gate_type = operation['type']
         params = operation.get('params', [])
@@ -361,7 +361,7 @@ class IntelQuantumSimulatorBackend:
         return None
     
     def _apply_gate_optimized(self, state: np.ndarray, gate_matrix: np.ndarray, 
-                            qubits: List[int], num_qubits: int) -> np.ndarray:
+                            qubits: list[int], num_qubits: int) -> np.ndarray:
         """Apply gate to state vector with Intel optimizations."""
         
         # Use Intel MKL optimized operations where possible
@@ -392,7 +392,7 @@ class IntelQuantumSimulatorBackend:
         return new_state
     
     def _apply_two_qubit_gate_vectorized(self, state: np.ndarray, gate_matrix: np.ndarray,
-                                       qubits: List[int], num_qubits: int) -> np.ndarray:
+                                       qubits: list[int], num_qubits: int) -> np.ndarray:
         """Apply two-qubit gate using vectorized operations."""
         new_state = state.copy()
         qubit0, qubit1 = sorted(qubits)
@@ -420,13 +420,13 @@ class IntelQuantumSimulatorBackend:
         return new_state
     
     def _apply_multi_qubit_gate(self, state: np.ndarray, gate_matrix: np.ndarray,
-                              qubits: List[int], num_qubits: int) -> np.ndarray:
+                              qubits: list[int], num_qubits: int) -> np.ndarray:
         """Apply multi-qubit gate (general case)."""
         # This is a simplified implementation
         # A full implementation would be more optimized
         return state  # Placeholder
     
-    def _sample_from_state(self, state: np.ndarray, shots: int) -> Dict[str, int]:
+    def _sample_from_state(self, state: np.ndarray, shots: int) -> dict[str, int]:
         """Sample measurement outcomes from state vector."""
         # Calculate probabilities
         probabilities = np.abs(state) ** 2
@@ -444,7 +444,7 @@ class IntelQuantumSimulatorBackend:
         
         return counts
     
-    def get_backend_info(self) -> Dict[str, Any]:
+    def get_backend_info(self) -> dict[str, Any]:
         """Get information about the backend configuration."""
         info = {
             'name': 'intel_qs',
@@ -485,7 +485,7 @@ class IntelQuantumSimulatorBackend:
         total_bytes = state_vector_bytes * overhead_factor
         return total_bytes / (1024 * 1024)  # Convert to MB
     
-    def can_simulate(self, circuit: QuantumCircuit) -> Tuple[bool, str]:
+    def can_simulate(self, circuit: QuantumCircuit) -> tuple[bool, str]:
         """Check if this backend can simulate the given circuit."""
         
         # Check memory requirements
@@ -515,9 +515,9 @@ def is_intel_qs_available() -> bool:
     return backend.intel_qs_available
 
 
-def create_intel_qs_backend(num_threads: Optional[int] = None,
+def create_intel_qs_backend(num_threads: int | None = None,
                            use_mkl: bool = True,
-                           memory_limit_gb: Optional[float] = None,
+                           memory_limit_gb: float | None = None,
                            enable_distributed: bool = False) -> IntelQuantumSimulatorBackend:
     """
     Factory function to create an Intel Quantum Simulator backend.
@@ -539,9 +539,9 @@ def create_intel_qs_backend(num_threads: Optional[int] = None,
     )
 
 
-def benchmark_intel_optimizations(num_qubits_list: List[int] = [10, 15, 20],
-                                 enable_mkl_list: List[bool] = [True, False],
-                                 thread_counts: List[int] = [1, 4, 8]) -> Dict[str, Any]:
+def benchmark_intel_optimizations(num_qubits_list: list[int] = None,
+                                 enable_mkl_list: list[bool] = None,
+                                 thread_counts: list[int] = None) -> dict[str, Any]:
     """
     Benchmark Intel-specific optimizations.
     
@@ -554,8 +554,15 @@ def benchmark_intel_optimizations(num_qubits_list: List[int] = [10, 15, 20],
         Benchmark results
     """
     import time
+
     from qiskit.circuit.random import random_circuit
     
+    if thread_counts is None:
+        thread_counts = [1, 4, 8]
+    if enable_mkl_list is None:
+        enable_mkl_list = [True, False]
+    if num_qubits_list is None:
+        num_qubits_list = [10, 15, 20]
     results = {}
     
     for num_qubits in num_qubits_list:
@@ -577,7 +584,7 @@ def benchmark_intel_optimizations(num_qubits_list: List[int] = [10, 15, 20],
                     
                     # Benchmark simulation
                     start_time = time.time()
-                    counts = backend.simulate(circuit, shots=1000)
+                    backend.simulate(circuit, shots=1000)
                     execution_time = time.time() - start_time
                     
                     results[key] = {

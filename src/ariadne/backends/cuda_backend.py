@@ -88,8 +88,8 @@ class CUDABackend:
         self._last_summary: SimulationSummary | None = None
         self._xp: Any = np
         self._mode = "cpu"
-        self._device_pool: List[int] = []
-        self._memory_pools: Dict[int, Any] = {}
+        self._device_pool: list[int] = []
+        self._memory_pools: dict[int, Any] = {}
         
         # Multi-GPU configuration
         self.enable_multi_gpu = enable_multi_gpu and CUDA_AVAILABLE
@@ -221,7 +221,7 @@ class CUDABackend:
     def _simulate_statevector_multi_gpu(self, circuit: QuantumCircuit) -> tuple[Any, Sequence[int], float]:
         """Simulate using multiple GPUs for large circuits."""
         num_qubits = circuit.num_qubits
-        num_devices = len(self._device_pool)
+        len(self._device_pool)
         
         # Determine optimal partitioning strategy
         if num_qubits <= 20:
@@ -275,7 +275,7 @@ class CUDABackend:
     
     def _simulate_chunked_circuit(self, circuit: QuantumCircuit) -> tuple[Any, Sequence[int], float]:
         """Simulate very large circuits using memory-efficient chunking."""
-        start = time.perf_counter()
+        time.perf_counter()
         
         num_qubits = circuit.num_qubits
         operations, measured_qubits = self._prepare_operations(circuit)
@@ -392,7 +392,7 @@ class CUDABackend:
         try:
             meminfo = cp.cuda.runtime.memGetInfo()
             return meminfo[0]  # Available memory
-        except:
+        except Exception:
             return 4 * 1024**3  # 4GB fallback
     
     def _estimate_max_qubits(self, available_memory: int) -> int:
@@ -411,16 +411,16 @@ class CUDABackend:
         and calculating the required grid size based on the state vector size.
         """
         # Optimal block size, typically a multiple of 32, e.g., 512 or 1024.
-        BLOCK_SIZE = 512
+        block_size = 512
         
         # Calculate required grid size (number of blocks)
-        # Grid size = ceil(state_size / BLOCK_SIZE)
-        grid_size = (state_size + BLOCK_SIZE - 1) // BLOCK_SIZE
+        # Grid size = ceil(state_size / block_size)
+        grid_size = (state_size + block_size - 1) // block_size
         
         # Ensure grid size is at least 1
         grid_size = max(1, grid_size)
         
-        return grid_size, BLOCK_SIZE
+        return grid_size, block_size
 
     def _create_sparse_state(self, num_qubits: int) -> Any:
         """Create sparse state representation for very large quantum states."""
@@ -467,8 +467,7 @@ class CUDABackend:
     
     def _operation_affects_chunk(self, targets, chunk_offset: int, chunk_qubits: int, total_qubits: int) -> bool:
         """Check if an operation affects a specific chunk."""
-        chunk_start = chunk_offset
-        chunk_end = chunk_offset + (2 ** chunk_qubits) - 1
+        chunk_offset + (2 ** chunk_qubits) - 1
         
         # For simplicity, assume operation affects chunk if any target qubit
         # corresponds to bits that vary within the chunk range
@@ -508,6 +507,8 @@ class CUDABackend:
                 self._apply_gate(state, matrix, qubits)
         else:
             self._apply_gate(state, matrix, qubits)
+
+    def _simulate_model_parallel_circuit(self, circuit: QuantumCircuit) -> tuple[Any, Sequence[int], float]:
         """Model parallel simulation for very large circuits."""
         # For very large circuits, implement circuit partitioning
         # This is a simplified version - full implementation would be more complex
@@ -532,7 +533,7 @@ class CUDABackend:
         # Keep on CPU initially, will be copied to GPU as needed
         return matrix.astype(np.complex128)
     
-    def _apply_gate_multi_gpu(self, state_chunks: List, matrix: Any, qubits: Sequence[int]) -> List:
+    def _apply_gate_multi_gpu(self, state_chunks: list, matrix: Any, qubits: Sequence[int]) -> list:
         """Apply gate across multiple GPU state chunks."""
         if not qubits:
             return state_chunks

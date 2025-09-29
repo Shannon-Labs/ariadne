@@ -2,22 +2,17 @@
 
 from __future__ import annotations
 
-import math
+import logging
 import warnings
 from time import perf_counter
-from typing import Any
-import logging
 
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 
-from .types import BackendType, BackendCapacity, RoutingDecision, SimulationResult
-from .backends.mps_backend import MPSBackend
 from .backends.tensor_network_backend import TensorNetworkBackend
-from .route.analyze import analyze_circuit, should_use_tensor_network
-from .route.mps_analyzer import should_use_mps
 from .route.enhanced_router import EnhancedQuantumRouter, RouterType
+from .types import BackendType, RoutingDecision, SimulationResult
 
 try:  # pragma: no cover - import guard for optional CUDA support
     from .backends.cuda_backend import CUDABackend, is_cuda_available
@@ -95,7 +90,7 @@ def _simulate_tensor_network(circuit: QuantumCircuit, shots: int) -> dict[str, i
     except Exception as exc:  # pragma: no cover - graceful fallback path
         warnings.warn(
             f"Tensor network simulation failed, falling back to Qiskit: {exc}",
-            RuntimeWarning,
+            RuntimeWarning, stacklevel=2,
         )
         return _simulate_qiskit(circuit, shots)
 

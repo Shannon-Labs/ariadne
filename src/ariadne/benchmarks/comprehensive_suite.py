@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import json
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any, Callable
-import numpy as np
+from typing import Any
 
+import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import QFT, QuantumVolume
 from qiskit.circuit.random import random_circuit
@@ -26,11 +26,11 @@ class BenchmarkResult:
     """Results from a single benchmark execution."""
     benchmark_name: str
     backend_name: str
-    circuit_params: Dict[str, Any]
+    circuit_params: dict[str, Any]
     execution_time: float
     memory_used_mb: float
     success: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
     counts_entropy: float = 0.0
     optimization_applied: bool = False
     shots: int = 1000
@@ -46,16 +46,16 @@ class BenchmarkSuite:
     """Configuration for a benchmark suite."""
     name: str
     description: str
-    benchmarks: List[str]
-    qubit_ranges: List[int]
-    shot_counts: List[int]
+    benchmarks: list[str]
+    qubit_ranges: list[int]
+    shot_counts: list[int]
     repetitions: int = 3
 
 
 class QuantumAlgorithmBenchmarks:
     """Comprehensive quantum algorithm benchmark suite."""
     
-    def __init__(self, output_dir: Optional[str] = None):
+    def __init__(self, output_dir: str | None = None):
         """Initialize benchmark suite."""
         self.output_dir = Path(output_dir) if output_dir else Path("benchmark_results")
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -195,7 +195,7 @@ class QuantumAlgorithmBenchmarks:
             circuit.h(i)
         
         # QAOA layers
-        for layer in range(layers):
+        for _layer in range(layers):
             # Problem Hamiltonian (ZZ interactions)
             for i in range(num_qubits - 1):
                 circuit.cx(i, i + 1)
@@ -214,7 +214,7 @@ class QuantumAlgorithmBenchmarks:
         circuit = QuantumCircuit(num_qubits)
         
         # Variational ansatz
-        for layer in range(layers):
+        for _layer in range(layers):
             # Single-qubit rotations
             for i in range(num_qubits):
                 circuit.ry(np.pi/4, i)  # Fixed parameter for benchmark
@@ -404,7 +404,7 @@ class QuantumAlgorithmBenchmarks:
             )
     
     def run_benchmark_suite(self, suite_name: str = 'standard', 
-                          backend_names: Optional[List[str]] = None) -> Dict[str, List[BenchmarkResult]]:
+                          backend_names: list[str] | None = None) -> dict[str, list[BenchmarkResult]]:
         """Run a complete benchmark suite."""
         
         if suite_name not in self.benchmark_suites:
@@ -417,7 +417,7 @@ class QuantumAlgorithmBenchmarks:
             try:
                 from .universal_interface import list_backends
                 backend_names = list_backends()
-            except:
+            except Exception:
                 backend_names = ['qiskit']  # Fallback
         
         print(f"🚀 Running benchmark suite: {suite.name}")
@@ -461,7 +461,7 @@ class QuantumAlgorithmBenchmarks:
         
         return all_results
     
-    def _save_benchmark_results(self, suite_name: str, results: Dict[str, List[BenchmarkResult]]):
+    def _save_benchmark_results(self, suite_name: str, results: dict[str, list[BenchmarkResult]]):
         """Save benchmark results to file."""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"benchmark_{suite_name}_{timestamp}.json"
@@ -478,7 +478,7 @@ class QuantumAlgorithmBenchmarks:
         print(f"💾 Results saved to: {filepath}")
     
     def generate_benchmark_report(self, suite_name: str, 
-                                results: Dict[str, List[BenchmarkResult]]) -> str:
+                                results: dict[str, list[BenchmarkResult]]) -> str:
         """Generate a comprehensive benchmark report."""
         
         report_lines = []
@@ -599,20 +599,20 @@ class QuantumAlgorithmBenchmarks:
         return '\n'.join(report_lines)
 
 
-def run_quick_benchmark() -> Dict[str, List[BenchmarkResult]]:
+def run_quick_benchmark() -> dict[str, list[BenchmarkResult]]:
     """Run quick benchmark for validation."""
     benchmarks = QuantumAlgorithmBenchmarks()
     return benchmarks.run_benchmark_suite('quick')
 
 
-def run_comprehensive_benchmark() -> Dict[str, List[BenchmarkResult]]:
+def run_comprehensive_benchmark() -> dict[str, list[BenchmarkResult]]:
     """Run comprehensive benchmark suite."""
     benchmarks = QuantumAlgorithmBenchmarks()
     return benchmarks.run_benchmark_suite('comprehensive')
 
 
 def compare_backends_on_algorithm(algorithm: str, num_qubits: int, 
-                                backend_names: List[str]) -> Dict[str, BenchmarkResult]:
+                                backend_names: list[str]) -> dict[str, BenchmarkResult]:
     """Compare specific backends on a single algorithm."""
     benchmarks = QuantumAlgorithmBenchmarks()
     results = {}

@@ -8,14 +8,14 @@ characteristics that provide computational advantages over classical algorithms.
 from __future__ import annotations
 
 import math
-import numpy as np
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Any
+
 from qiskit import QuantumCircuit
 
-from ariadne.route.analyze import analyze_circuit, is_clifford_circuit
+from ariadne.route.analyze import analyze_circuit
 
 
-def detect_quantum_advantage(circuit: QuantumCircuit) -> Dict[str, Any]:
+def detect_quantum_advantage(circuit: QuantumCircuit) -> dict[str, Any]:
     """
     Comprehensive quantum advantage detection analysis.
     
@@ -57,7 +57,7 @@ def detect_quantum_advantage(circuit: QuantumCircuit) -> Dict[str, Any]:
     }
 
 
-def detect_classical_intractability(circuit: QuantumCircuit, analysis: Dict[str, Any]) -> Dict[str, Any]:
+def detect_classical_intractability(circuit: QuantumCircuit, analysis: dict[str, Any]) -> dict[str, Any]:
     """
     Detect if circuit is classically intractable to simulate.
     
@@ -82,7 +82,6 @@ def detect_classical_intractability(circuit: QuantumCircuit, analysis: Dict[str,
         }
     
     # Thresholds for classical intractability
-    qubit_threshold = 50  # Generally accepted threshold for classical simulation
     depth_threshold = 100  # Deep circuits become harder to simulate
     entanglement_threshold = 0.7  # High entanglement suggests complexity
     
@@ -126,14 +125,14 @@ def detect_classical_intractability(circuit: QuantumCircuit, analysis: Dict[str,
     }
 
 
-def detect_quantum_volume_advantage(circuit: QuantumCircuit, analysis: Dict[str, Any]) -> Dict[str, Any]:
+def detect_quantum_volume_advantage(circuit: QuantumCircuit, analysis: dict[str, Any]) -> dict[str, Any]:
     """
     Detect quantum volume advantage over classical systems.
     """
     
     quantum_volume = analysis.get('quantum_volume_estimate', 1)
-    num_qubits = analysis['num_qubits']
-    depth = analysis['depth']
+    analysis['num_qubits']
+    analysis['depth']
     
     # Current classical simulation limits (approximate)
     classical_volume_limit = 2 ** 30  # ~1 billion state amplitudes
@@ -171,7 +170,7 @@ def detect_quantum_volume_advantage(circuit: QuantumCircuit, analysis: Dict[str,
     }
 
 
-def detect_entanglement_advantage(circuit: QuantumCircuit, analysis: Dict[str, Any]) -> Dict[str, Any]:
+def detect_entanglement_advantage(circuit: QuantumCircuit, analysis: dict[str, Any]) -> dict[str, Any]:
     """
     Detect advantage from quantum entanglement.
     """
@@ -214,7 +213,7 @@ def detect_entanglement_advantage(circuit: QuantumCircuit, analysis: Dict[str, A
     }
 
 
-def analyze_error_threshold(circuit: QuantumCircuit, analysis: Dict[str, Any]) -> Dict[str, Any]:
+def analyze_error_threshold(circuit: QuantumCircuit, analysis: dict[str, Any]) -> dict[str, Any]:
     """
     Analyze if circuit can maintain quantum advantage despite noise.
     """
@@ -258,7 +257,7 @@ def analyze_error_threshold(circuit: QuantumCircuit, analysis: Dict[str, Any]) -
     }
 
 
-def detect_sampling_advantage(circuit: QuantumCircuit, analysis: Dict[str, Any]) -> Dict[str, Any]:
+def detect_sampling_advantage(circuit: QuantumCircuit, analysis: dict[str, Any]) -> dict[str, Any]:
     """
     Detect quantum sampling advantage (like Google's quantum supremacy).
     """
@@ -314,7 +313,7 @@ def detect_sampling_advantage(circuit: QuantumCircuit, analysis: Dict[str, Any])
     }
 
 
-def calculate_overall_advantage_score(components: Dict[str, Dict[str, Any]]) -> float:
+def calculate_overall_advantage_score(components: dict[str, dict[str, Any]]) -> float:
     """
     Calculate overall quantum advantage score from all components.
     """
@@ -338,7 +337,7 @@ def calculate_overall_advantage_score(components: Dict[str, Dict[str, Any]]) -> 
     return min(1.0, overall_score)
 
 
-def classify_advantage_type(overall_score: float, classical_analysis: Dict[str, Any]) -> str:
+def classify_advantage_type(overall_score: float, classical_analysis: dict[str, Any]) -> str:
     """
     Classify the type of quantum advantage.
     """
@@ -355,7 +354,7 @@ def classify_advantage_type(overall_score: float, classical_analysis: Dict[str, 
         return 'POTENTIAL_ADVANTAGE'
 
 
-def generate_recommendations(advantage_score: float, analysis: Dict[str, Any]) -> List[str]:
+def generate_recommendations(advantage_score: float, analysis: dict[str, Any]) -> list[str]:
     """
     Generate recommendations based on quantum advantage analysis.
     """

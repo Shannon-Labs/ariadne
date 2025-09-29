@@ -1,5 +1,6 @@
 import argparse
 
+
 def main():
     """Main command-line interface for Ariadne."""
     parser = argparse.ArgumentParser(
@@ -12,7 +13,7 @@ def main():
         version="%(prog)s 1.0.0"
     )
     # Future sub-commands for simulate, route, benchmark, etc. can be added here.
-    args = parser.parse_args()
+    parser.parse_args()
 
     print("Welcome to Ariadne. Use --help for options.")
 

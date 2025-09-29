@@ -10,13 +10,11 @@ from __future__ import annotations
 
 import json
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+
 import numpy as np
-
 from qiskit import QuantumCircuit
-
 
 # --- Calibration Constants ---
 # General System Parameters
@@ -77,8 +75,8 @@ class PerformanceMeasurement:
 class BackendProfile:
     """Performance profile for a specific backend."""
     backend_name: str
-    measurements: List[PerformanceMeasurement]
-    calibrated_capacities: Dict[str, float]
+    measurements: list[PerformanceMeasurement]
+    calibrated_capacities: dict[str, float]
     last_updated: float
     confidence_score: float
 
@@ -89,8 +87,8 @@ class CalibrationData:
     version: str
     created_timestamp: float
     last_updated: float
-    backend_profiles: Dict[str, BackendProfile]
-    calibrated_capacities: Dict[str, Dict[str, float]]
+    backend_profiles: dict[str, BackendProfile]
+    calibrated_capacities: dict[str, dict[str, float]]
     measurement_count: int
 
 
@@ -102,12 +100,12 @@ class BackendCalibrator:
     measurements and adapts routing decisions accordingly.
     """
     
-    def __init__(self, calibration_file: Optional[Path] = None):
+    def __init__(self, calibration_file: Path | None = None):
         """Initialize calibrator with optional persistent storage."""
         self.calibration_file = calibration_file or Path("ariadne_calibration.json")
-        self.measurements: List[PerformanceMeasurement] = []
-        self.backend_profiles: Dict[str, BackendProfile] = {}
-        self.calibration_data: Optional[CalibrationData] = None
+        self.measurements: list[PerformanceMeasurement] = []
+        self.backend_profiles: dict[str, BackendProfile] = {}
+        self.calibration_data: CalibrationData | None = None
         
         # Load existing calibration data
         self.load_calibration()
@@ -163,7 +161,7 @@ class BackendCalibrator:
     def recalibrate_all(self) -> None:
         """Recalibrate all backend capacities based on measurements."""
         
-        for backend_name, profile in self.backend_profiles.items():
+        for _backend_name, profile in self.backend_profiles.items():
             if len(profile.measurements) < MIN_MEASUREMENTS_FOR_CALIBRATION:
                 continue  # Need minimum measurements for calibration
             
@@ -187,7 +185,7 @@ class BackendCalibrator:
         # Save calibration data
         self.save_calibration()
     
-    def _calculate_clifford_capacity(self, measurements: List[PerformanceMeasurement]) -> float:
+    def _calculate_clifford_capacity(self, measurements: list[PerformanceMeasurement]) -> float:
         """Calculate calibrated Clifford circuit capacity."""
         clifford_times = [
             m.execution_time for m in measurements 
@@ -205,7 +203,7 @@ class BackendCalibrator:
         capacity = max(CLIFFORD_MIN_CAPACITY, baseline_time / avg_time * CLIFFORD_SCALING_FACTOR)
         return min(CLIFFORD_MAX_CAPACITY, capacity)  # Cap at reasonable maximum
     
-    def _calculate_general_capacity(self, measurements: List[PerformanceMeasurement]) -> float:
+    def _calculate_general_capacity(self, measurements: list[PerformanceMeasurement]) -> float:
         """Calculate calibrated general circuit capacity."""
         general_times = [
             m.execution_time for m in measurements 
@@ -221,7 +219,7 @@ class BackendCalibrator:
         capacity = max(GENERAL_MIN_CAPACITY, baseline_time / avg_time * GENERAL_SCALING_FACTOR)
         return min(GENERAL_MAX_CAPACITY, capacity)
     
-    def _calculate_memory_efficiency(self, measurements: List[PerformanceMeasurement]) -> float:
+    def _calculate_memory_efficiency(self, measurements: list[PerformanceMeasurement]) -> float:
         """Calculate memory efficiency score."""
         memory_usages = [
             m.memory_usage_mb for m in measurements 
@@ -244,7 +242,7 @@ class BackendCalibrator:
         try:
             # Calculate memory per exponential qubit
             efficiency_scores = []
-            for mem, qubits in zip(memory_usages, qubit_counts):
+            for mem, qubits in zip(memory_usages, qubit_counts, strict=False):
                 if qubits > 0:
                     expected_mem = MEMORY_AMPLITUDE_BYTES * (2 ** qubits) / BYTES_TO_MB_DIVISOR  # Bytes per amplitude / MB conversion
                     efficiency = expected_mem / max(mem, MEMORY_MIN_USAGE_THRESHOLD)
@@ -252,12 +250,12 @@ class BackendCalibrator:
             
             if efficiency_scores:
                 return np.mean(efficiency_scores)
-        except:
+        except Exception:
             pass
         
         return MEMORY_DEFAULT_EFFICIENCY
     
-    def _calculate_platform_boost(self, measurements: List[PerformanceMeasurement]) -> float:
+    def _calculate_platform_boost(self, measurements: list[PerformanceMeasurement]) -> float:
         """Calculate platform-specific performance boost."""
         # This would compare performance across different platforms
         # For now, return a conservative estimate based on timing variance
@@ -279,7 +277,7 @@ class BackendCalibrator:
         
         return PLATFORM_BOOST_MIN
     
-    def _calculate_confidence(self, measurements: List[PerformanceMeasurement]) -> float:
+    def _calculate_confidence(self, measurements: list[PerformanceMeasurement]) -> float:
         """Calculate confidence score for calibration."""
         count = len(measurements)
         success_rate = sum(1 for m in measurements if m.success) / max(count, 1)
@@ -295,13 +293,13 @@ class BackendCalibrator:
         
         # Create a simple representation of the circuit
         circuit_str = ""
-        for instruction, qubits, clbits in circuit.data:
+        for instruction, qubits, _clbits in circuit.data:
             qubit_indices = [circuit.find_bit(q).index for q in qubits]
             circuit_str += f"{instruction.name}-{qubit_indices};"
         
         return hashlib.md5(circuit_str.encode()).hexdigest()[:CIRCUIT_HASH_LENGTH]
     
-    def get_calibrated_capacities(self, backend_name: str) -> Optional[Dict[str, float]]:
+    def get_calibrated_capacities(self, backend_name: str) -> dict[str, float] | None:
         """Get calibrated capacities for a specific backend."""
         if backend_name in self.backend_profiles:
             profile = self.backend_profiles[backend_name]
@@ -362,7 +360,7 @@ class BackendCalibrator:
             if not self.calibration_file.exists():
                 return
             
-            with open(self.calibration_file, 'r') as f:
+            with open(self.calibration_file) as f:
                 data_dict = json.load(f)
             
             # Reconstruct calibration data (simplified version)
@@ -381,7 +379,7 @@ class BackendCalibrator:
 
 
 # Global calibrator instance
-_global_calibrator: Optional[BackendCalibrator] = None
+_global_calibrator: BackendCalibrator | None = None
 
 
 def get_calibrator() -> BackendCalibrator:
@@ -392,7 +390,7 @@ def get_calibrator() -> BackendCalibrator:
     return _global_calibrator
 
 
-def load_calibration() -> Optional[CalibrationData]:
+def load_calibration() -> CalibrationData | None:
     """Load calibration data for router initialization."""
     calibrator = get_calibrator()
     return calibrator.calibration_data

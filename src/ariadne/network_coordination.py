@@ -7,16 +7,14 @@ with 22ps timing precision and advanced synchronization protocols.
 """
 
 import asyncio
-import time
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple, Callable, Union
-from enum import Enum
-import uuid
-import threading
 import json
 import logging
-from collections import defaultdict
-import hashlib
+import threading
+import time
+import uuid
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 try:
     import websockets
@@ -31,7 +29,6 @@ except ImportError:
     ZMQ_AVAILABLE = False
 
 from qiskit import QuantumCircuit
-from qiskit.circuit import Instruction
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +65,7 @@ class NetworkNode:
     node_type: NodeType
     address: str
     port: int
-    capabilities: Dict[str, Any] = field(default_factory=dict)
+    capabilities: dict[str, Any] = field(default_factory=dict)
     status: NetworkStatus = NetworkStatus.OFFLINE
     last_heartbeat: float = 0.0
     latency: float = 0.0
@@ -86,10 +83,10 @@ class QuantumTask:
     circuit: QuantumCircuit
     shots: int
     priority: TaskPriority = TaskPriority.NORMAL
-    backend_requirements: Dict[str, Any] = field(default_factory=dict)
+    backend_requirements: dict[str, Any] = field(default_factory=dict)
     created_at: float = field(default_factory=time.time)
     timeout: float = 300.0  # 5 minutes default
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     
     def __post_init__(self):
         if not self.task_id:
@@ -101,10 +98,10 @@ class TaskResult:
     """Result of a quantum task execution."""
     task_id: str
     node_id: str
-    result: Dict[str, Any]
+    result: dict[str, Any]
     execution_time: float
     timestamp: float = field(default_factory=time.time)
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class TimePrecisionManager:
@@ -114,7 +111,7 @@ class TimePrecisionManager:
         self.target_precision_ps = target_precision_ps
         self.clock_sync_offset = 0.0
         self.drift_compensation = 0.0
-        self._calibration_data: List[float] = []
+        self._calibration_data: list[float] = []
         
     def get_precise_timestamp(self) -> float:
         """Get high-precision timestamp with picosecond accuracy."""
@@ -126,7 +123,7 @@ class TimePrecisionManager:
         # Convert to seconds with picosecond precision
         return corrected_time / 1e9
     
-    def calibrate_with_reference(self, reference_timestamps: List[Tuple[float, float]]):
+    def calibrate_with_reference(self, reference_timestamps: list[tuple[float, float]]):
         """Calibrate timing with reference clock measurements."""
         if len(reference_timestamps) < 2:
             return
@@ -185,11 +182,11 @@ class NetworkCoordinator:
         self.enable_zmq = enable_zmq and ZMQ_AVAILABLE
         
         # Network management
-        self.nodes: Dict[str, NetworkNode] = {}
-        self.connections: Dict[str, Any] = {}
-        self.task_queue: List[QuantumTask] = []
-        self.active_tasks: Dict[str, QuantumTask] = {}
-        self.completed_tasks: Dict[str, TaskResult] = {}
+        self.nodes: dict[str, NetworkNode] = {}
+        self.connections: dict[str, Any] = {}
+        self.task_queue: list[QuantumTask] = []
+        self.active_tasks: dict[str, QuantumTask] = {}
+        self.completed_tasks: dict[str, TaskResult] = {}
         
         # Timing and synchronization
         self.timing_manager = TimePrecisionManager(timing_precision_ps)
@@ -197,8 +194,8 @@ class NetworkCoordinator:
         
         # Threading and async management
         self._running = False
-        self._coordinator_thread: Optional[threading.Thread] = None
-        self._heartbeat_thread: Optional[threading.Thread] = None
+        self._coordinator_thread: threading.Thread | None = None
+        self._heartbeat_thread: threading.Thread | None = None
         
         # Network protocols
         self._websocket_server = None
@@ -303,7 +300,7 @@ class NetworkCoordinator:
             if node_id and node_id in self.nodes:
                 self.nodes[node_id].status = NetworkStatus.OFFLINE
     
-    async def _process_message(self, data: dict, connection) -> Optional[dict]:
+    async def _process_message(self, data: dict, connection) -> dict | None:
         """Process incoming network messages."""
         message_type = data.get('type')
         
@@ -531,7 +528,7 @@ class NetworkCoordinator:
         for i in reversed(tasks_to_remove):
             del self.task_queue[i]
     
-    def _select_best_node(self, task: QuantumTask, available_nodes: List[NetworkNode]) -> Optional[NetworkNode]:
+    def _select_best_node(self, task: QuantumTask, available_nodes: list[NetworkNode]) -> NetworkNode | None:
         """Select the best node for a given task."""
         if not available_nodes:
             return None
@@ -695,7 +692,7 @@ class NetworkCoordinator:
         logger.info(f"Submitted task {task.task_id} to network queue")
         return task.task_id
     
-    def get_task_result(self, task_id: str) -> Optional[TaskResult]:
+    def get_task_result(self, task_id: str) -> TaskResult | None:
         """Get the result of a completed task."""
         return self.completed_tasks.get(task_id)
     

@@ -8,7 +8,8 @@ from typing import Literal
 
 from qiskit import QuantumCircuit
 
-from ..router import simulate as core_simulate, SimulationResult
+from ..router import SimulationResult
+from ..router import simulate as core_simulate
 from .analyze import analyze_circuit
 
 Backend = Literal["stim", "tn", "sv", "dd"]

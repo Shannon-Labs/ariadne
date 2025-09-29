@@ -7,23 +7,24 @@ network protocols, and fault tolerance mechanisms.
 """
 
 import asyncio
-import pytest
 import time
-import threading
-import json
-from typing import Dict, List, Optional, Any
-from unittest.mock import Mock, patch, AsyncMock
-import tempfile
-from pathlib import Path
+from unittest.mock import Mock
 
+import pytest
 from qiskit import QuantumCircuit
 from qiskit.circuit.random import random_circuit
 
 # Import the modules we're testing
 try:
     from ariadne.network_coordination import (
-        NetworkCoordinator, NetworkNode, QuantumTask, TaskResult,
-        NodeType, TaskPriority, NetworkStatus, TimePrecisionManager
+        NetworkCoordinator,
+        NetworkNode,
+        NetworkStatus,
+        NodeType,
+        QuantumTask,
+        TaskPriority,
+        TaskResult,
+        TimePrecisionManager,
     )
     NETWORK_COORDINATION_AVAILABLE = True
 except ImportError:
@@ -68,7 +69,7 @@ class TestTimePrecisionManager:
         local_times = [time.time() + i * 0.1 for i in range(5)]
         reference_times = [t + 0.002 for t in local_times]  # 2ms offset
         
-        reference_data = list(zip(local_times, reference_times))
+        reference_data = list(zip(local_times, reference_times, strict=False))
         manager.calibrate_with_reference(reference_data)
         
         # Verify offset was calculated
@@ -335,10 +336,9 @@ class TestNetworkCoordinator:
         )
         
         # Test node scoring
-        available_nodes = [node1, node2]
         
         score1_task1 = coordinator._calculate_node_score(task1, node1)
-        score2_task1 = coordinator._calculate_node_score(task1, node2)
+        coordinator._calculate_node_score(task1, node2)
         
         score1_task2 = coordinator._calculate_node_score(task2, node1)
         score2_task2 = coordinator._calculate_node_score(task2, node2)

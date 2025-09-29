@@ -12,17 +12,17 @@ import math
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 from matplotlib.figure import Figure
 
 # Optional imports for enhanced visualization
 try:
-    import plotly.graph_objects as go
     import plotly.express as px
+    import plotly.graph_objects as go
     from plotly.subplots import make_subplots
     PLOTLY_AVAILABLE = True
 except ImportError:
@@ -48,7 +48,7 @@ class VisualizationConfig:
     # Plot styling
     style: str = "seaborn"  # matplotlib style
     color_palette: str = "viridis"
-    figure_size: Tuple[int, int] = (12, 8)
+    figure_size: tuple[int, int] = (12, 8)
     dpi: int = 300
     
     # Content options
@@ -66,7 +66,7 @@ class ResultAnalyzer:
     from quantum simulation results.
     """
     
-    def __init__(self, config: Optional[VisualizationConfig] = None):
+    def __init__(self, config: VisualizationConfig | None = None):
         """Initialize result analyzer."""
         self.config = config or VisualizationConfig()
         
@@ -77,7 +77,7 @@ class ResultAnalyzer:
         plt.style.use(self.config.style)
         sns.set_palette(self.config.color_palette)
     
-    def analyze_single_result(self, result) -> Dict[str, Any]:
+    def analyze_single_result(self, result) -> dict[str, Any]:
         """Analyze a single simulation result."""
         
         analysis = {
@@ -105,7 +105,7 @@ class ResultAnalyzer:
         
         return analysis
     
-    def analyze_batch_results(self, results: List) -> Dict[str, Any]:
+    def analyze_batch_results(self, results: list) -> dict[str, Any]:
         """Analyze multiple simulation results."""
         
         if not results:
@@ -139,7 +139,7 @@ class ResultAnalyzer:
         
         return batch_analysis
     
-    def compare_backends(self, backend_results: Dict[str, Any]) -> Dict[str, Any]:
+    def compare_backends(self, backend_results: dict[str, Any]) -> dict[str, Any]:
         """Compare results across different backends."""
         
         comparison = {
@@ -174,7 +174,7 @@ class ResultAnalyzer:
         
         return comparison
     
-    def _calculate_measurement_entropy(self, counts: Dict[str, int]) -> float:
+    def _calculate_measurement_entropy(self, counts: dict[str, int]) -> float:
         """Calculate Shannon entropy of measurement outcomes."""
         total = sum(counts.values())
         if total == 0:
@@ -188,12 +188,12 @@ class ResultAnalyzer:
         
         return entropy
     
-    def _get_probability_distribution(self, counts: Dict[str, int]) -> Dict[str, float]:
+    def _get_probability_distribution(self, counts: dict[str, int]) -> dict[str, float]:
         """Get normalized probability distribution."""
         total = sum(counts.values())
         return {state: count / total for state, count in counts.items()}
     
-    def _calculate_statistical_metrics(self, counts: Dict[str, int]) -> Dict[str, float]:
+    def _calculate_statistical_metrics(self, counts: dict[str, int]) -> dict[str, float]:
         """Calculate statistical metrics for measurement results."""
         total_shots = sum(counts.values())
         probabilities = [count / total_shots for count in counts.values()]
@@ -206,7 +206,7 @@ class ResultAnalyzer:
             'coefficient_of_variation': np.std(probabilities) / max(np.mean(probabilities), 1e-10)
         }
     
-    def _analyze_performance_trends(self, analyses: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_performance_trends(self, analyses: list[dict[str, Any]]) -> dict[str, Any]:
         """Analyze performance trends across multiple simulations."""
         
         execution_times = [a['execution_time'] for a in analyses]
@@ -228,12 +228,12 @@ class ResultVisualizer:
     Creates comprehensive plots and charts for analysis and reporting.
     """
     
-    def __init__(self, config: Optional[VisualizationConfig] = None):
+    def __init__(self, config: VisualizationConfig | None = None):
         """Initialize result visualizer."""
         self.config = config or VisualizationConfig()
         self.analyzer = ResultAnalyzer(config)
     
-    def create_single_result_plots(self, result, save_prefix: str = "single_result") -> List[Path]:
+    def create_single_result_plots(self, result, save_prefix: str = "single_result") -> list[Path]:
         """Create comprehensive plots for a single simulation result."""
         
         saved_files = []
@@ -257,7 +257,7 @@ class ResultVisualizer:
         
         return saved_files
     
-    def create_comparison_plots(self, backend_results: Dict[str, Any], save_prefix: str = "comparison") -> List[Path]:
+    def create_comparison_plots(self, backend_results: dict[str, Any], save_prefix: str = "comparison") -> list[Path]:
         """Create comparison plots across multiple backends."""
         
         saved_files = []
@@ -274,7 +274,7 @@ class ResultVisualizer:
         
         return saved_files
     
-    def create_batch_analysis_plots(self, batch_analysis: Dict[str, Any], save_prefix: str = "batch") -> List[Path]:
+    def create_batch_analysis_plots(self, batch_analysis: dict[str, Any], save_prefix: str = "batch") -> list[Path]:
         """Create plots for batch simulation analysis."""
         
         saved_files = []
@@ -365,7 +365,7 @@ class ResultVisualizer:
         plt.tight_layout()
         return fig
     
-    def _plot_quantum_advantage(self, qa_analysis: Dict[str, Any]) -> Figure:
+    def _plot_quantum_advantage(self, qa_analysis: dict[str, Any]) -> Figure:
         """Plot quantum advantage analysis."""
         
         fig, axes = plt.subplots(2, 2, figsize=self.config.figure_size)
@@ -417,14 +417,14 @@ class ResultVisualizer:
         plt.tight_layout()
         return fig
     
-    def _plot_backend_performance_comparison(self, backend_results: Dict[str, Any]) -> Figure:
+    def _plot_backend_performance_comparison(self, backend_results: dict[str, Any]) -> Figure:
         """Plot performance comparison across backends."""
         
         backends = list(backend_results.keys())
         execution_times = []
         memory_usage = []
         
-        for backend, result in backend_results.items():
+        for _backend, result in backend_results.items():
             execution_times.append(result.execution_time)
             if hasattr(result, 'resource_estimate') and result.resource_estimate:
                 memory_usage.append(result.resource_estimate.memory_requirement_mb)
@@ -440,14 +440,14 @@ class ResultVisualizer:
         ax1.tick_params(axis='x', rotation=45)
         
         # Add value labels on bars
-        for bar, time_val in zip(bars1, execution_times):
+        for bar, time_val in zip(bars1, execution_times, strict=False):
             height = bar.get_height()
             ax1.text(bar.get_x() + bar.get_width()/2., height,
                     f'{time_val:.3f}s', ha='center', va='bottom')
         
         # Memory usage comparison
         if any(mem > 0 for mem in memory_usage):
-            bars2 = ax2.bar(backends, memory_usage)
+            ax2.bar(backends, memory_usage)
             ax2.set_ylabel('Memory Usage (MB)')
             ax2.set_title('Memory Requirements')
             ax2.tick_params(axis='x', rotation=45)
@@ -459,7 +459,7 @@ class ResultVisualizer:
         plt.tight_layout()
         return fig
     
-    def _plot_backend_accuracy_comparison(self, backend_results: Dict[str, Any]) -> Figure:
+    def _plot_backend_accuracy_comparison(self, backend_results: dict[str, Any]) -> Figure:
         """Plot accuracy comparison between backends."""
         
         fig, ax = plt.subplots(figsize=self.config.figure_size)
@@ -492,7 +492,7 @@ class ResultVisualizer:
         plt.tight_layout()
         return fig
     
-    def _plot_performance_trends(self, batch_analysis: Dict[str, Any]) -> Figure:
+    def _plot_performance_trends(self, batch_analysis: dict[str, Any]) -> Figure:
         """Plot performance trends over multiple simulations."""
         
         individual_analyses = batch_analysis['individual_analyses']
@@ -534,7 +534,7 @@ class ResultVisualizer:
         plt.tight_layout()
         return fig
     
-    def _plot_backend_usage(self, backend_usage: Dict[str, int]) -> Figure:
+    def _plot_backend_usage(self, backend_usage: dict[str, int]) -> Figure:
         """Plot backend usage distribution."""
         
         fig, ax = plt.subplots(figsize=(8, 6))
@@ -547,7 +547,7 @@ class ResultVisualizer:
         
         return fig
     
-    def _calculate_distribution_similarity(self, counts1: Dict[str, int], counts2: Dict[str, int]) -> float:
+    def _calculate_distribution_similarity(self, counts1: dict[str, int], counts2: dict[str, int]) -> float:
         """Calculate similarity between two probability distributions."""
         
         # Get all unique states
@@ -581,25 +581,25 @@ class ResultVisualizer:
 
 
 # Convenience functions
-def visualize_result(result, save_prefix: str = "result", config: Optional[VisualizationConfig] = None) -> List[Path]:
+def visualize_result(result, save_prefix: str = "result", config: VisualizationConfig | None = None) -> list[Path]:
     """Create visualizations for a single simulation result."""
     
     visualizer = ResultVisualizer(config)
     return visualizer.create_single_result_plots(result, save_prefix)
 
 
-def compare_backend_results(backend_results: Dict[str, Any], 
+def compare_backend_results(backend_results: dict[str, Any], 
                           save_prefix: str = "comparison",
-                          config: Optional[VisualizationConfig] = None) -> List[Path]:
+                          config: VisualizationConfig | None = None) -> list[Path]:
     """Create comparison visualizations for multiple backend results."""
     
     visualizer = ResultVisualizer(config)
     return visualizer.create_comparison_plots(backend_results, save_prefix)
 
 
-def analyze_batch_results(results: List, 
+def analyze_batch_results(results: list, 
                          save_prefix: str = "batch",
-                         config: Optional[VisualizationConfig] = None) -> Tuple[Dict[str, Any], List[Path]]:
+                         config: VisualizationConfig | None = None) -> tuple[dict[str, Any], list[Path]]:
     """Analyze and visualize batch simulation results."""
     
     analyzer = ResultAnalyzer(config)

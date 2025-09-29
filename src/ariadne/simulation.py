@@ -12,16 +12,17 @@ import time
 import warnings
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union, Callable
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 from qiskit import QuantumCircuit
 
-# Import core Ariadne components
-from .router import SimulationResult, BackendType
+from .ft.resource_estimator import ResourceEstimate, estimate_circuit_resources
 from .quantum_advantage import detect_quantum_advantage
-from .ft.resource_estimator import estimate_circuit_resources, ResourceEstimate
+
+# Import core Ariadne components
+from .router import BackendType, SimulationResult
 
 
 class OptimizationLevel(Enum):
@@ -46,20 +47,20 @@ class SimulationOptions:
     """Comprehensive simulation configuration options."""
     
     # Backend preferences
-    backend_preference: List[str] = field(default_factory=lambda: ["auto"])
-    backend_options: Dict[str, Any] = field(default_factory=dict)
+    backend_preference: list[str] = field(default_factory=lambda: ["auto"])
+    backend_options: dict[str, Any] = field(default_factory=dict)
     
     # Execution parameters
     shots: int = 1000
-    seed: Optional[int] = None
+    seed: int | None = None
     
     # Optimization settings
     optimization_level: OptimizationLevel = OptimizationLevel.MEDIUM
-    transpiler_options: Dict[str, Any] = field(default_factory=dict)
+    transpiler_options: dict[str, Any] = field(default_factory=dict)
     
     # Error mitigation
     error_mitigation: ErrorMitigation = ErrorMitigation.NONE
-    mitigation_options: Dict[str, Any] = field(default_factory=dict)
+    mitigation_options: dict[str, Any] = field(default_factory=dict)
     
     # Analysis options
     analyze_quantum_advantage: bool = True
@@ -68,8 +69,8 @@ class SimulationOptions:
     
     # Performance options
     enable_caching: bool = True
-    memory_limit_mb: Optional[int] = None
-    timeout_seconds: Optional[float] = None
+    memory_limit_mb: int | None = None
+    timeout_seconds: float | None = None
     
     # Output options
     return_statevector: bool = False
@@ -87,27 +88,27 @@ class EnhancedSimulationResult:
     """Enhanced simulation result with comprehensive analysis."""
     
     # Core results
-    counts: Dict[str, int]
+    counts: dict[str, int]
     execution_time: float
     backend_used: str
     
     # Circuit analysis
-    circuit_analysis: Dict[str, Any]
-    quantum_advantage: Optional[Dict[str, Any]] = None
-    resource_estimate: Optional[ResourceEstimate] = None
+    circuit_analysis: dict[str, Any]
+    quantum_advantage: dict[str, Any] | None = None
+    resource_estimate: ResourceEstimate | None = None
     
     # Performance metrics
-    backend_performance: Dict[str, Any] = field(default_factory=dict)
-    optimization_applied: List[str] = field(default_factory=list)
+    backend_performance: dict[str, Any] = field(default_factory=dict)
+    optimization_applied: list[str] = field(default_factory=list)
     
     # Optional outputs
-    statevector: Optional[np.ndarray] = None
-    probabilities: Optional[np.ndarray] = None
-    intermediate_results: List[Dict[str, Any]] = field(default_factory=list)
+    statevector: np.ndarray | None = None
+    probabilities: np.ndarray | None = None
+    intermediate_results: list[dict[str, Any]] = field(default_factory=list)
     
     # Metadata
-    simulation_options: Optional[SimulationOptions] = None
-    warnings: List[str] = field(default_factory=list)
+    simulation_options: SimulationOptions | None = None
+    warnings: list[str] = field(default_factory=list)
     
     def get_expectation_value(self, observable: str) -> float:
         """Calculate expectation value for a Pauli observable."""
@@ -122,12 +123,12 @@ class EnhancedSimulationResult:
         
         return 0.0  # Placeholder for complex observables
     
-    def get_probability_distribution(self) -> Dict[str, float]:
+    def get_probability_distribution(self) -> dict[str, float]:
         """Get normalized probability distribution."""
         total_shots = sum(self.counts.values())
         return {state: count / total_shots for state, count in self.counts.items()}
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert result to dictionary for serialization."""
         return {
             'counts': self.counts,
@@ -151,9 +152,9 @@ class QuantumSimulator:
     """
     
     def __init__(self, 
-                 config_file: Optional[Path] = None,
+                 config_file: Path | None = None,
                  enable_calibration: bool = True,
-                 cache_dir: Optional[Path] = None):
+                 cache_dir: Path | None = None):
         """Initialize quantum simulator with configuration."""
         
         # Core router with intelligent backend selection
@@ -178,7 +179,7 @@ class QuantumSimulator:
     
     def simulate(self, 
                 circuit: QuantumCircuit,
-                options: Optional[SimulationOptions] = None) -> EnhancedSimulationResult:
+                options: SimulationOptions | None = None) -> EnhancedSimulationResult:
         """
         Simulate quantum circuit with comprehensive analysis.
         
@@ -195,7 +196,7 @@ class QuantumSimulator:
             options = SimulationOptions()
         
         # Start timing
-        start_time = time.perf_counter()
+        time.perf_counter()
         
         # Validate inputs
         self._validate_inputs(circuit, options)
@@ -229,7 +230,7 @@ class QuantumSimulator:
             result = self._execute_simulation(optimized_circuit, options)
         except Exception as e:
             # Enhanced error handling with fallback
-            warnings.warn(f"Primary simulation failed: {e}. Attempting fallback...")
+            warnings.warn(f"Primary simulation failed: {e}. Attempting fallback...", stacklevel=2)
             result = self._execute_fallback_simulation(optimized_circuit, options)
         
         # Apply error mitigation if requested
@@ -270,8 +271,8 @@ class QuantumSimulator:
         return enhanced_result
     
     def simulate_batch(self,
-                      circuits: List[QuantumCircuit],
-                      options: Optional[SimulationOptions] = None) -> List[EnhancedSimulationResult]:
+                      circuits: list[QuantumCircuit],
+                      options: SimulationOptions | None = None) -> list[EnhancedSimulationResult]:
         """Simulate multiple circuits with shared configuration."""
         
         if options is None:
@@ -293,8 +294,8 @@ class QuantumSimulator:
     
     def compare_backends(self,
                         circuit: QuantumCircuit,
-                        backends: List[str],
-                        shots: int = 1000) -> Dict[str, EnhancedSimulationResult]:
+                        backends: list[str],
+                        shots: int = 1000) -> dict[str, EnhancedSimulationResult]:
         """Compare circuit execution across multiple backends."""
         
         results = {}
@@ -311,7 +312,7 @@ class QuantumSimulator:
                 result = self.simulate(circuit, options)
                 results[backend] = result
             except Exception as e:
-                warnings.warn(f"Backend {backend} failed: {e}")
+                warnings.warn(f"Backend {backend} failed: {e}", stacklevel=2)
         
         return results
     
@@ -333,7 +334,7 @@ class QuantumSimulator:
             include_fault_tolerant=include_fault_tolerant
         )
     
-    def get_performance_stats(self) -> Dict[str, Any]:
+    def get_performance_stats(self) -> dict[str, Any]:
         """Get comprehensive performance statistics."""
         
         return {
@@ -445,7 +446,7 @@ class QuantumSimulator:
         
         return result
     
-    def _get_statevector(self, circuit: QuantumCircuit) -> Optional[np.ndarray]:
+    def _get_statevector(self, circuit: QuantumCircuit) -> np.ndarray | None:
         """Get final statevector if possible."""
         
         try:
@@ -455,14 +456,14 @@ class QuantumSimulator:
         except Exception:
             return None
     
-    def _calculate_probabilities(self, counts: Dict[str, int]) -> np.ndarray:
+    def _calculate_probabilities(self, counts: dict[str, int]) -> np.ndarray:
         """Calculate probability distribution from counts."""
         
         total_shots = sum(counts.values())
         num_states = len(counts)
         
         probabilities = np.zeros(num_states)
-        for i, (state, count) in enumerate(counts.items()):
+        for i, (_state, count) in enumerate(counts.items()):
             probabilities[i] = count / total_shots
         
         return probabilities
@@ -483,7 +484,7 @@ class QuantumSimulator:
         # In practice, would use matplotlib/plotly to create plots
         pass
     
-    def _get_cache_stats(self) -> Dict[str, Any]:
+    def _get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         
         # Placeholder for cache statistics
@@ -503,7 +504,7 @@ class QuantumSimulator:
 # Convenience functions for common use cases
 def simulate(circuit: QuantumCircuit, 
             shots: int = 1000,
-            backend: Optional[str] = None,
+            backend: str | None = None,
             optimize: bool = True) -> EnhancedSimulationResult:
     """Simple simulation interface."""
     
@@ -535,8 +536,8 @@ def simulate_with_analysis(circuit: QuantumCircuit,
 
 
 def compare_backends(circuit: QuantumCircuit,
-                    backends: List[str] = None,
-                    shots: int = 1000) -> Dict[str, EnhancedSimulationResult]:
+                    backends: list[str] = None,
+                    shots: int = 1000) -> dict[str, EnhancedSimulationResult]:
     """Compare circuit performance across backends."""
     
     if backends is None:

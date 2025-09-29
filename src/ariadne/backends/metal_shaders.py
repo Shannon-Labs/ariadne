@@ -9,7 +9,8 @@ quantum operations using Apple's optimized compute shaders.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
+
 import numpy as np
 
 # Metal framework imports (would require actual Metal framework on macOS)
@@ -60,7 +61,7 @@ class MetalShaderLibrary:
     def _compile_shaders(self):
         """Compile Metal compute shaders for quantum operations."""
         # Define Metal shading language source for quantum operations
-        shader_source = self._get_quantum_shader_source()
+        self._get_quantum_shader_source()
         
         # Compile shaders (placeholder)
         # In real implementation:
@@ -225,7 +226,7 @@ class MetalQuantumAccelerator:
     def apply_two_qubit_gate_metal(self,
                                  state: np.ndarray,
                                  gate_matrix: np.ndarray,
-                                 qubits: Tuple[int, int]) -> np.ndarray:
+                                 qubits: tuple[int, int]) -> np.ndarray:
         """Apply two qubit gate using Metal compute shader."""
         
         if not self.enable_metal:
@@ -260,7 +261,7 @@ class MetalQuantumAccelerator:
                                    gate_matrix: np.ndarray,
                                    qubit: int) -> np.ndarray:
         """CPU fallback for single qubit gate."""
-        num_qubits = int(math.log2(len(state)))
+        int(math.log2(len(state)))
         new_state = np.zeros_like(state)
         
         mask = 1 << qubit
@@ -277,7 +278,7 @@ class MetalQuantumAccelerator:
     def _apply_two_qubit_gate_cpu(self,
                                 state: np.ndarray,
                                 gate_matrix: np.ndarray,
-                                qubits: Tuple[int, int]) -> np.ndarray:
+                                qubits: tuple[int, int]) -> np.ndarray:
         """CPU fallback for two qubit gate."""
         qubit1, qubit2 = qubits
         new_state = np.zeros_like(state)
@@ -319,7 +320,7 @@ def is_metal_acceleration_available() -> bool:
     return METAL_AVAILABLE
 
 
-def get_metal_device_info() -> Dict[str, Any]:
+def get_metal_device_info() -> dict[str, Any]:
     """Get Metal device information."""
     if not METAL_AVAILABLE:
         return {

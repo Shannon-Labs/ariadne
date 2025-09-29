@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import math
-import time
 import mmap
 import os
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple, List
+from typing import Any
 from weakref import WeakValueDictionary
 
 import numpy as np
@@ -57,12 +57,12 @@ class AppleSiliconMemoryManager:
         self.enable_caching = enable_caching
         
         # Memory pool management
-        self.allocated_blocks: Dict[str, MemoryBlock] = {}
+        self.allocated_blocks: dict[str, MemoryBlock] = {}
         self.cached_states: WeakValueDictionary = WeakValueDictionary()
         self.total_allocated_mb = 0.0
         
         # Memory mapping for large states
-        self.mapped_files: Dict[str, str] = {}  # block_id -> file_path
+        self.mapped_files: dict[str, str] = {}  # block_id -> file_path
         self.temp_dir = "/tmp/ariadne_memory" if enable_mapping else None
         
         # Performance metrics
@@ -89,7 +89,7 @@ class AppleSiliconMemoryManager:
         # CPU-only mode can still benefit from unified memory optimizations
         pass
     
-    def allocate_state_vector(self, num_qubits: int, block_id: Optional[str] = None) -> Tuple[np.ndarray, str]:
+    def allocate_state_vector(self, num_qubits: int, block_id: str | None = None) -> tuple[np.ndarray, str]:
         """Allocate optimally aligned state vector for Apple Silicon."""
         state_size = 2 ** num_qubits
         size_mb = state_size * 16 / (1024 * 1024)  # 16 bytes per complex128
@@ -179,7 +179,7 @@ class AppleSiliconMemoryManager:
         
         return state
     
-    def get_cached_state(self, circuit_hash: str) -> Optional[np.ndarray]:
+    def get_cached_state(self, circuit_hash: str) -> np.ndarray | None:
         """Retrieve cached state vector if available."""
         if not self.enable_caching:
             return None
@@ -211,7 +211,7 @@ class AppleSiliconMemoryManager:
                 try:
                     os.unlink(self.mapped_files[block_id])
                     del self.mapped_files[block_id]
-                except:
+                except Exception:
                     pass  # Ignore cleanup errors
             
             # Update total allocated memory
@@ -233,7 +233,7 @@ class AppleSiliconMemoryManager:
         for block_id in blocks_to_remove:
             self.release_block(block_id)
     
-    def get_memory_stats(self) -> Dict[str, Any]:
+    def get_memory_stats(self) -> dict[str, Any]:
         """Get memory management statistics."""
         return {
             'total_allocated_mb': self.total_allocated_mb,
@@ -253,14 +253,14 @@ class AppleSiliconMemoryManager:
         for file_path in self.mapped_files.values():
             try:
                 os.unlink(file_path)
-            except:
+            except Exception:
                 pass
         
         # Clean up temporary directory if empty
         if self.temp_dir and os.path.exists(self.temp_dir):
             try:
                 os.rmdir(self.temp_dir)
-            except:
+            except Exception:
                 pass  # Directory not empty or other error
 
 
@@ -408,7 +408,7 @@ class MetalBackend:
             self.memory_manager.configure_for_cpu()
 
     @property
-    def performance_stats(self) -> Dict[str, Any]:
+    def performance_stats(self) -> dict[str, Any]:
         """Get comprehensive performance statistics."""
         stats = {
             'memory_stats': self.memory_manager.get_memory_stats(),
@@ -418,7 +418,7 @@ class MetalBackend:
         return stats
     
     @property
-    def memory_stats(self) -> Dict[str, Any]:
+    def memory_stats(self) -> dict[str, Any]:
         """Get memory management statistics."""
         return self.memory_manager.get_memory_stats()
     
@@ -642,7 +642,7 @@ class MetalBackend:
         except:
             return False
     
-    def _initialize_optimized_state(self, num_qubits: int, use_accelerate: bool) -> Tuple[np.ndarray, str]:
+    def _initialize_optimized_state(self, num_qubits: int, use_accelerate: bool) -> tuple[np.ndarray, str]:
         """Initialize state vector with optimal memory layout using memory manager."""
         # Use memory manager for optimal allocation
         state, block_id = self.memory_manager.allocate_state_vector(num_qubits)

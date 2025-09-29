@@ -1,2 +1,2 @@
 [console_scripts]
-ariadne = ariadne.router:simulate
+ariadne = ariadne.__main__:main

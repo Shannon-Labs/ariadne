@@ -6,13 +6,14 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![PyPI version](https://badge.fury.io/py/ariadne-quantum.svg)](https://badge.fury.io/py/ariadne-quantum)
 [![CI/CD Pipeline](https://img.shields.io/github/actions/workflow/status/Shannon-Labs/ariadne/ci.yml?branch=main&label=CI%2FCD&style=for-the-badge)](https://github.com/Shannon-Labs/ariadne/actions/workflows/ci.yml)
 [![codecov](https://img.shields.io/codecov/c/github/Shannon-Labs/ariadne/main?style=for-the-badge)](https://codecov.io/gh/Shannon-Labs/ariadne)
 
 </div>
 
-Ariadne is a quantum circuit router that analyzes your circuits and automatically routes them to the most performant simulator backend. The routing stack is streamlined, eliminating complex wrappers like `QuantumRouter` and removing simulated timing logic. This ensures deterministic, auditable decisions based purely on circuit properties and refactored calibration constants.
+Ariadne is an intelligent quantum circuit router that automatically analyzes circuit properties and selects the optimal simulator backend. By leveraging mathematical analysis of circuit structure (entropy, treewidth, Clifford ratio), Ariadne delivers significant performance improvements over manual backend selection.
+
+The routing system is designed for transparency and determinism - every routing decision is based on measurable circuit characteristics and can be audited for correctness.
 
 [📚 Documentation Site](https://shannon-labs.github.io/ariadne) • [📖 Local Docs](docs/README.md) • [💡 Examples](examples/README.md) • [🚀 Getting Started](#-getting-started) • [📊 Benchmarks](#-benchmarks) • [🤝 Contributing](#-contributing)
 
@@ -66,7 +67,9 @@ Use the new visualization utility in [`src/ariadne/visualization.py`](src/ariadn
 ### Installation
 
 ```bash
-pip install ariadne-quantum
+git clone https://github.com/Shannon-Labs/ariadne.git
+cd ariadne
+pip install -e .
 ```
 Ariadne relies on several high-performance dependencies, including `quimb` for Matrix Product State (MPS) acceleration. These dependencies are automatically installed.
 

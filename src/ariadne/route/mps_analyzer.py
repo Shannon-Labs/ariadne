@@ -1,7 +1,9 @@
 """Analyzes a quantum circuit to determine if it's suitable for MPS simulation."""
 
-from qiskit import QuantumCircuit
 import math
+
+from qiskit import QuantumCircuit
+
 
 def should_use_mps(circuit: QuantumCircuit) -> bool:
     """
@@ -45,7 +47,7 @@ def should_use_mps(circuit: QuantumCircuit) -> bool:
 
     # Count two-qubit gates (entangling gates)
     two_qubit_gates = 0
-    for instruction, qargs, cargs in circuit.data:
+    for _instruction, qargs, _cargs in circuit.data:
         if len(qargs) == 2:
             # We assume any two-qubit gate is an entangling gate for this heuristic
             # (e.g., CNOT, CZ, RXX, etc.)

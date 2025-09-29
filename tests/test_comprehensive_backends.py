@@ -5,18 +5,19 @@ This module provides comprehensive unit tests for all Ariadne quantum backends,
 including functionality, performance, and integration testing.
 """
 
-import pytest
-import numpy as np
 import time
-from unittest.mock import Mock, patch
+from unittest.mock import patch
+
+import pytest
 from qiskit import QuantumCircuit
 
-# Import Ariadne components
-from ariadne.router import EnhancedQuantumRouter, BackendType, simulate
-from ariadne.backends.metal_backend import MetalBackend, is_metal_available
 from ariadne.backends.cuda_backend import CUDABackend, is_cuda_available
-from ariadne.simulation import QuantumSimulator, SimulationOptions
+from ariadne.backends.metal_backend import MetalBackend, is_metal_available
 from ariadne.route.analyze import analyze_circuit
+
+# Import Ariadne components
+from ariadne.router import BackendType, EnhancedQuantumRouter
+from ariadne.simulation import QuantumSimulator, SimulationOptions
 
 
 class TestEnhancedQuantumRouter:
@@ -253,7 +254,7 @@ class TestCircuitAnalysis:
         assert analysis['num_qubits'] == 3
         assert 'depth' in analysis
         assert 'is_clifford' in analysis
-        assert analysis['is_clifford'] == True
+        assert analysis['is_clifford']
     
     def test_advanced_circuit_metrics(self):
         """Test advanced circuit analysis metrics."""
@@ -278,7 +279,7 @@ class TestCircuitAnalysis:
         assert analysis['gate_entropy'] >= 0
         assert analysis['entanglement_entropy_estimate'] >= 0
         assert analysis['quantum_volume_estimate'] > 0
-        assert analysis['is_clifford'] == False
+        assert not analysis['is_clifford']
     
     def test_clifford_detection(self):
         """Test Clifford circuit detection."""
@@ -289,7 +290,7 @@ class TestCircuitAnalysis:
         clifford_qc.cx(0, 1)
         
         analysis_clifford = analyze_circuit(clifford_qc)
-        assert analysis_clifford['is_clifford'] == True
+        assert analysis_clifford['is_clifford']
         
         # Non-Clifford circuit
         non_clifford_qc = QuantumCircuit(2)
@@ -298,7 +299,7 @@ class TestCircuitAnalysis:
         non_clifford_qc.cx(0, 1)
         
         analysis_non_clifford = analyze_circuit(non_clifford_qc)
-        assert analysis_non_clifford['is_clifford'] == False
+        assert not analysis_non_clifford['is_clifford']
 
 
 class TestUnifiedSimulationAPI:
@@ -406,7 +407,7 @@ class TestQuantumAdvantageDetection:
         assert isinstance(advantage, dict)
         assert 'overall_advantage_score' in advantage
         assert 'has_quantum_advantage' in advantage
-        assert advantage['has_quantum_advantage'] == False  # Clifford circuits are classical
+        assert not advantage['has_quantum_advantage']  # Clifford circuits are classical
     
     def test_advantage_detection_large_circuit(self):
         """Test quantum advantage detection for large non-Clifford circuit."""
@@ -474,7 +475,7 @@ class TestConfigurationSystem:
     
     def test_config_initialization(self):
         """Test configuration system initialization."""
-        from ariadne.config import get_config, AriadneConfig
+        from ariadne.config import AriadneConfig, get_config
         
         config = get_config()
         assert isinstance(config, AriadneConfig)
@@ -487,7 +488,7 @@ class TestConfigurationSystem:
         manager = get_config_manager()
         
         # Test setting preference
-        original_preferences = manager.get_preferred_backends()
+        manager.get_preferred_backends()
         manager.set_backend_preference('test_backend', 10)
         
         # Verify change (simplified test)
@@ -506,8 +507,8 @@ class TestConfigurationSystem:
         metal_config = manager.get_backend_config("metal")
         cuda_config = manager.get_backend_config("cuda")
         
-        assert metal_config.enabled == False
-        assert cuda_config.enabled == False
+        assert not metal_config.enabled
+        assert not cuda_config.enabled
 
 
 class TestErrorHandling:
@@ -552,7 +553,7 @@ class TestErrorHandling:
             assert result is not None
             assert sum(result.counts.values()) == 100
             # Should have used fallback backend
-            assert result.metadata.get('fallback_used', False) == True
+            assert result.metadata.get('fallback_used', False)
 
 
 class TestPerformanceRequirements:

@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import math
-import numpy as np
+from typing import Any
+
 import networkx as nx
 from qiskit import QuantumCircuit
-from typing import Dict, List, Tuple, Any
 
 CLIFFORD_ONE_Q = {"i", "x", "y", "z", "h", "s", "sdg", "sx", "sxdg"}
 CLIFFORD_TWO_Q = {"cx", "cz", "swap"}
 
 
-def is_clifford_circuit(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> bool:
+def is_clifford_circuit(circ: QuantumCircuit, properties: dict[str, Any] | None = None) -> bool:
     if properties is None:
         # Fallback for standalone use
         for inst, _, _ in circ.data:
@@ -25,7 +25,7 @@ def is_clifford_circuit(circ: QuantumCircuit, properties: Dict[str, Any] | None 
     return properties["total_gates"] == properties["clifford_gates"]
 
 
-def _get_circuit_properties(circ: QuantumCircuit) -> Dict[str, Any]:
+def _get_circuit_properties(circ: QuantumCircuit) -> dict[str, Any]:
     properties = {
         "total_gates": 0,
         "two_qubit_gates": 0,
@@ -56,7 +56,7 @@ def _get_circuit_properties(circ: QuantumCircuit) -> Dict[str, Any]:
     return properties
 
 
-def calculate_gate_entropy(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
+def calculate_gate_entropy(circ: QuantumCircuit, properties: dict[str, Any] | None = None) -> float:
     """Calculate Shannon entropy of gate distribution."""
     gate_counts = {}
     total_gates = 0
@@ -79,7 +79,7 @@ def calculate_gate_entropy(circ: QuantumCircuit, properties: Dict[str, Any] | No
     return entropy
 
 
-def estimate_entanglement_entropy(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
+def estimate_entanglement_entropy(circ: QuantumCircuit, properties: dict[str, Any] | None = None) -> float:
     """Estimate the entanglement entropy that will be generated."""
     if properties is None:
         properties = _get_circuit_properties(circ)
@@ -104,7 +104,7 @@ def estimate_quantum_volume(circ: QuantumCircuit) -> float:
     return 2 ** m
 
 
-def calculate_parallelization_factor(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
+def calculate_parallelization_factor(circ: QuantumCircuit, properties: dict[str, Any] | None = None) -> float:
     """Calculate how much parallelization is possible."""
     if circ.depth() == 0:
         return 1.0
@@ -122,7 +122,7 @@ def calculate_parallelization_factor(circ: QuantumCircuit, properties: Dict[str,
     return total_gates / circ.depth()
 
 
-def estimate_noise_susceptibility(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
+def estimate_noise_susceptibility(circ: QuantumCircuit, properties: dict[str, Any] | None = None) -> float:
     """Estimate circuit's susceptibility to noise."""
     if properties is None:
         properties = _get_circuit_properties(circ)
@@ -143,7 +143,7 @@ def estimate_noise_susceptibility(circ: QuantumCircuit, properties: Dict[str, An
     return min(1.0, susceptibility)
 
 
-def estimate_classical_complexity(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
+def estimate_classical_complexity(circ: QuantumCircuit, properties: dict[str, Any] | None = None) -> float:
     """Estimate classical simulation complexity."""
     if is_clifford_circuit(circ, properties=properties):
         # Clifford circuits are polynomial time
@@ -174,14 +174,14 @@ def calculate_connectivity_score(graph: nx.Graph) -> float:
     # Also consider clustering coefficient
     try:
         clustering = nx.average_clustering(graph)
-    except:
+    except Exception:
         clustering = 0.0
     
     # Combine density and clustering
     return 0.7 * density + 0.3 * clustering
 
 
-def calculate_gate_diversity(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
+def calculate_gate_diversity(circ: QuantumCircuit, properties: dict[str, Any] | None = None) -> float:
     """Calculate diversity of gate types used."""
     if properties is None:
         properties = _get_circuit_properties(circ)
@@ -196,7 +196,7 @@ def calculate_gate_diversity(circ: QuantumCircuit, properties: Dict[str, Any] | 
     return len(gate_types) / max(1, math.log2(total_gates + 1))
 
 
-def calculate_expressivity(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
+def calculate_expressivity(circ: QuantumCircuit, properties: dict[str, Any] | None = None) -> float:
     """Calculate circuit expressivity measure."""
     if properties is None:
         properties = _get_circuit_properties(circ)
@@ -253,7 +253,7 @@ def approximate_treewidth(g: nx.Graph) -> int:
         return max((deg for _, deg in g.degree()), default=0)
 
 
-def clifford_ratio(circ: QuantumCircuit, properties: Dict[str, Any] | None = None) -> float:
+def clifford_ratio(circ: QuantumCircuit, properties: dict[str, Any] | None = None) -> float:
     if properties is None:
         properties = _get_circuit_properties(circ)
         

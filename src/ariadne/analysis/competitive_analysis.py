@@ -10,13 +10,12 @@ from __future__ import annotations
 
 import json
 import time
-import warnings
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any, Union
-import numpy as np
+from typing import Any
 
+import numpy as np
 from qiskit import QuantumCircuit
 
 
@@ -26,11 +25,11 @@ class CompetitorFramework:
     name: str
     version: str
     description: str
-    strengths: List[str]
-    weaknesses: List[str]
-    typical_use_cases: List[str]
+    strengths: list[str]
+    weaknesses: list[str]
+    typical_use_cases: list[str]
     installation_complexity: str  # 'easy', 'medium', 'hard'
-    hardware_requirements: List[str]
+    hardware_requirements: list[str]
     license_type: str
 
 
@@ -39,7 +38,7 @@ class CompetitiveMetric:
     """A single competitive metric comparison."""
     metric_name: str
     ariadne_score: float
-    competitor_scores: Dict[str, float]
+    competitor_scores: dict[str, float]
     winner: str
     margin: float  # How much better the winner is
     description: str
@@ -50,7 +49,7 @@ class CompetitiveAnalysisResult:
     """Result of competitive analysis."""
     test_name: str
     circuit_description: str
-    metrics: List[CompetitiveMetric]
+    metrics: list[CompetitiveMetric]
     overall_winner: str
     ariadne_rank: int
     total_competitors: int
@@ -64,7 +63,7 @@ class CompetitiveAnalysisResult:
 class CompetitiveAnalyzer:
     """Main competitive analysis engine."""
     
-    def __init__(self, output_dir: Optional[str] = None):
+    def __init__(self, output_dir: str | None = None):
         """Initialize competitive analyzer."""
         self.output_dir = Path(output_dir) if output_dir else Path("competitive_analysis")
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -117,14 +116,14 @@ class CompetitiveAnalyzer:
             )
         }
     
-    def run_performance_comparison(self, test_circuits: Optional[List[Tuple[str, QuantumCircuit]]] = None,
-                                 shots: int = 1000) -> List[CompetitiveAnalysisResult]:
+    def run_performance_comparison(self, test_circuits: list[tuple[str, QuantumCircuit]] | None = None,
+                                 shots: int = 1000) -> list[CompetitiveAnalysisResult]:
         """Run comprehensive performance comparison."""
         
         if test_circuits is None:
             test_circuits = self._create_standard_test_circuits()
         
-        print(f"🥊 Starting competitive analysis")
+        print("🥊 Starting competitive analysis")
         print(f"📊 Test circuits: {len(test_circuits)}")
         print(f"🎯 Shots per circuit: {shots}")
         print()
@@ -156,7 +155,7 @@ class CompetitiveAnalyzer:
         
         return results
     
-    def _create_standard_test_circuits(self) -> List[Tuple[str, QuantumCircuit]]:
+    def _create_standard_test_circuits(self) -> list[tuple[str, QuantumCircuit]]:
         """Create standard test circuits for competitive analysis."""
         circuits = []
         
@@ -181,7 +180,7 @@ class CompetitiveAnalyzer:
         
         # Large circuit (where performance matters)
         circuit = QuantumCircuit(16)
-        for layer in range(5):
+        for _layer in range(5):
             for i in range(16):
                 circuit.ry(np.random.random() * np.pi, i)
             for i in range(0, 15, 2):
@@ -202,7 +201,7 @@ class CompetitiveAnalyzer:
         
         return circuits
     
-    def _test_ariadne(self, circuit: QuantumCircuit, shots: int) -> Dict[str, float]:
+    def _test_ariadne(self, circuit: QuantumCircuit, shots: int) -> dict[str, float]:
         """Test Ariadne performance on circuit."""
         try:
             from ..backends.universal_interface import simulate_with_best_backend
@@ -240,7 +239,7 @@ class CompetitiveAnalyzer:
                 'error': str(e)
             }
     
-    def _test_competitors(self, circuit: QuantumCircuit, shots: int) -> Dict[str, Dict[str, float]]:
+    def _test_competitors(self, circuit: QuantumCircuit, shots: int) -> dict[str, dict[str, float]]:
         """Test competitor performance (simulated for demonstration)."""
         # In a real implementation, this would actually run competitor frameworks
         # For now, we'll simulate realistic performance characteristics
@@ -287,8 +286,8 @@ class CompetitiveAnalyzer:
         return competitor_results
     
     def _analyze_performance_results(self, circuit_name: str, circuit: QuantumCircuit,
-                                   ariadne_metrics: Dict[str, float],
-                                   competitor_metrics: Dict[str, Dict[str, float]]) -> CompetitiveAnalysisResult:
+                                   ariadne_metrics: dict[str, float],
+                                   competitor_metrics: dict[str, dict[str, float]]) -> CompetitiveAnalysisResult:
         """Analyze performance results and determine winners."""
         
         metrics = []
@@ -385,7 +384,7 @@ class CompetitiveAnalyzer:
             total_competitors=len(all_frameworks)
         )
     
-    def _save_competitive_results(self, results: List[CompetitiveAnalysisResult]):
+    def _save_competitive_results(self, results: list[CompetitiveAnalysisResult]):
         """Save competitive analysis results."""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"competitive_analysis_{timestamp}.json"
@@ -398,7 +397,7 @@ class CompetitiveAnalyzer:
         
         print(f"💾 Competitive analysis saved to: {filepath}")
     
-    def generate_competitive_report(self, results: List[CompetitiveAnalysisResult]) -> str:
+    def generate_competitive_report(self, results: list[CompetitiveAnalysisResult]) -> str:
         """Generate comprehensive competitive analysis report."""
         
         report_lines = []
@@ -482,7 +481,7 @@ class CompetitiveAnalyzer:
         # Competitor framework comparison
         report_lines.append("## Competitor Framework Analysis")
         
-        for name, framework in self.competitors.items():
+        for _name, framework in self.competitors.items():
             report_lines.append(f"### {framework.name}")
             report_lines.append(f"**Description**: {framework.description}")
             report_lines.append(f"**License**: {framework.license_type}")
@@ -543,7 +542,7 @@ class CompetitiveAnalyzer:
         return '\n'.join(report_lines)
     
     def benchmark_against_specific_competitor(self, competitor_name: str, 
-                                            test_circuit: QuantumCircuit) -> Dict[str, Any]:
+                                            test_circuit: QuantumCircuit) -> dict[str, Any]:
         """Detailed head-to-head comparison with specific competitor."""
         
         print(f"🥊 Head-to-head: Ariadne vs {competitor_name}")
@@ -595,13 +594,13 @@ class CompetitiveAnalyzer:
         return comparison
 
 
-def run_competitive_analysis() -> List[CompetitiveAnalysisResult]:
+def run_competitive_analysis() -> list[CompetitiveAnalysisResult]:
     """Run comprehensive competitive analysis."""
     analyzer = CompetitiveAnalyzer()
     return analyzer.run_performance_comparison()
 
 
-def compare_with_qiskit(circuit: QuantumCircuit) -> Dict[str, Any]:
+def compare_with_qiskit(circuit: QuantumCircuit) -> dict[str, Any]:
     """Quick comparison with Qiskit on specific circuit."""
     analyzer = CompetitiveAnalyzer()
     return analyzer.benchmark_against_specific_competitor('qiskit_basic', circuit)

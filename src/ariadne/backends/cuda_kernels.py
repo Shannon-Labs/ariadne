@@ -5,9 +5,10 @@ This module provides custom CUDA kernels for high-performance quantum gate opera
 state vector manipulations, and circuit simulations optimized for NVIDIA GPUs.
 """
 
-import numpy as np
-from typing import Dict, Any, Optional, List
 import logging
+from typing import Any
+
+import numpy as np
 
 try:
     import cupy as cp
@@ -23,7 +24,7 @@ class CUDAKernels:
     """Manager for custom CUDA kernels for quantum operations."""
     
     def __init__(self):
-        self.kernels: Dict[str, Any] = {}
+        self.kernels: dict[str, Any] = {}
         self._compiled = False
         
         if not CUPY_AVAILABLE:
@@ -348,7 +349,7 @@ class CUDAKernels:
         target_qubit: int
     ) -> cp.ndarray:
         """Fallback implementation for single qubit gates."""
-        n_qubits = int(np.log2(len(state)))
+        int(np.log2(len(state)))
         n_states = len(state)
         result = cp.copy(state)
         
@@ -375,7 +376,7 @@ class CUDAKernels:
         target_qubit: int
     ) -> cp.ndarray:
         """Fallback implementation for two qubit gates."""
-        n_qubits = int(np.log2(len(state)))
+        int(np.log2(len(state)))
         n_states = len(state)
         result = cp.copy(state)
         
@@ -405,7 +406,7 @@ class CUDAKernels:
         """Check if CUDA kernels are available and compiled."""
         return CUPY_AVAILABLE and self._compiled
     
-    def get_kernel_info(self) -> Dict[str, Any]:
+    def get_kernel_info(self) -> dict[str, Any]:
         """Get information about compiled kernels."""
         if not self.is_available:
             return {"available": False, "reason": "CuPy not available or compilation failed"}

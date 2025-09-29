@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 import numpy as np
 from qiskit import QuantumCircuit
@@ -13,20 +12,20 @@ from qiskit import QuantumCircuit
 class TensorNetworkOptions:
     """Configuration for the tensor network contraction."""
 
-    max_bond_dim: Optional[int] = None
+    max_bond_dim: int | None = None
     max_time: float = 10.0
     max_repeats: int = 32
-    seed: Optional[int] = None
+    seed: int | None = None
 
 
 class TensorNetworkBackend:
     """Perform circuit simulation via tensor network contraction."""
 
-    def __init__(self, options: Optional[TensorNetworkOptions] = None) -> None:
+    def __init__(self, options: TensorNetworkOptions | None = None) -> None:
         self._options = options or TensorNetworkOptions()
         self._optimizer = None
 
-    def simulate(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
+    def simulate(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         """Return measurement counts for ``circuit`` using tensor networks."""
 
         if shots < 0:
@@ -90,7 +89,7 @@ class TensorNetworkBackend:
 
     def _sample_counts(
         self, statevector: np.ndarray, shots: int, num_qubits: int
-    ) -> Dict[str, int]:
+    ) -> dict[str, int]:
         if shots == 0:
             return {}
 
@@ -107,7 +106,7 @@ class TensorNetworkBackend:
         rng = np.random.default_rng(self._options.seed)
         outcomes = rng.choice(len(probabilities), size=shots, p=probabilities)
 
-        counts: Dict[str, int] = {}
+        counts: dict[str, int] = {}
         for outcome in outcomes:
             bitstring = format(int(outcome), f"0{num_qubits}b")[::-1]
             counts[bitstring] = counts.get(bitstring, 0) + 1

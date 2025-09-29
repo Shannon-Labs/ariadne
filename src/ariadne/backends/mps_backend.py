@@ -1,10 +1,13 @@
 """A backend for simulating quantum circuits using Matrix Product States."""
 
-from qiskit import QuantumCircuit
-from .universal_interface import UniversalBackend, BackendCapability, BackendMetrics
-from typing import Dict, Any, List, Tuple
+from typing import Any
+
 import numpy as np
 import quimb.tensor as tn
+from qiskit import QuantumCircuit
+
+from .universal_interface import BackendCapability, BackendMetrics, UniversalBackend
+
 
 class MPSBackend(UniversalBackend):
     """
@@ -22,7 +25,7 @@ class MPSBackend(UniversalBackend):
         """
         self.max_bond_dimension = max_bond_dimension
 
-    def simulate(self, circuit: QuantumCircuit, shots: int = 1000, **kwargs) -> Dict[str, int]:
+    def simulate(self, circuit: QuantumCircuit, shots: int = 1000, **kwargs) -> dict[str, int]:
         """
         Simulates the given quantum circuit using an MPS representation.
 
@@ -53,7 +56,7 @@ class MPSBackend(UniversalBackend):
         )
         
         # 2. Apply gates from the Qiskit circuit
-        for instruction, qargs, cargs in circuit.data:
+        for instruction, qargs, _cargs in circuit.data:
             gate_name = instruction.name
             # Qiskit's find_bit is used to map Qubit objects to their integer index
             qubits = [circuit.find_bit(q).index for q in qargs]
@@ -96,10 +99,10 @@ class MPSBackend(UniversalBackend):
 
 
     # Implement required abstract methods from UniversalBackend
-    def get_backend_info(self) -> Dict[str, Any]:
+    def get_backend_info(self) -> dict[str, Any]:
         return {"name": "mps", "max_bond_dimension": self.max_bond_dimension}
 
-    def get_capabilities(self) -> List[BackendCapability]:
+    def get_capabilities(self) -> list[BackendCapability]:
         return [BackendCapability.STATE_VECTOR_SIMULATION]
 
     def get_metrics(self) -> BackendMetrics:
@@ -115,7 +118,7 @@ class MPSBackend(UniversalBackend):
             estimated_cost_factor=0.1
         )
 
-    def can_simulate(self, circuit: QuantumCircuit, **kwargs) -> Tuple[bool, str]:
+    def can_simulate(self, circuit: QuantumCircuit, **kwargs) -> tuple[bool, str]:
         if circuit.num_qubits > 50:
             return False, "Too many qubits for MPS backend"
         return True, "Can simulate"

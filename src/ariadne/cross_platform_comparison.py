@@ -6,24 +6,20 @@ across different platforms, architectures, and configurations to optimize
 quantum circuit routing and backend selection.
 """
 
-import time
 import json
-import platform
-import psutil
-import statistics
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple, Union
-from enum import Enum
-from pathlib import Path
-import threading
 import logging
+import platform
+import statistics
 import subprocess
 import sys
-from datetime import datetime
-import numpy as np
+import time
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
+import numpy as np
+import psutil
 from qiskit import QuantumCircuit
-from qiskit.circuit.random import random_circuit
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +54,7 @@ class SystemInfo:
     cpu_frequency: float
     memory_total: int
     memory_available: int
-    gpu_info: Dict[str, Any] = field(default_factory=dict)
+    gpu_info: dict[str, Any] = field(default_factory=dict)
     python_version: str = ""
     os_version: str = ""
     architecture: str = ""
@@ -75,9 +71,9 @@ class SystemInfo:
 @dataclass
 class BenchmarkConfig:
     """Configuration for benchmark tests."""
-    qubit_ranges: List[int] = field(default_factory=lambda: [5, 10, 15, 20, 25])
-    circuit_depths: List[int] = field(default_factory=lambda: [10, 50, 100, 200])
-    shot_counts: List[int] = field(default_factory=lambda: [100, 1000, 10000])
+    qubit_ranges: list[int] = field(default_factory=lambda: [5, 10, 15, 20, 25])
+    circuit_depths: list[int] = field(default_factory=lambda: [10, 50, 100, 200])
+    shot_counts: list[int] = field(default_factory=lambda: [100, 1000, 10000])
     iterations_per_test: int = 3
     warmup_iterations: int = 1
     timeout_seconds: float = 300.0
@@ -94,9 +90,9 @@ class PerformanceResult:
     execution_time: float
     memory_peak: int
     throughput: float  # shots/second
-    accuracy: Optional[float] = None
-    error_rate: Optional[float] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    accuracy: float | None = None
+    error_rate: float | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
     timestamp: float = field(default_factory=time.time)
 
 
@@ -104,9 +100,9 @@ class PerformanceResult:
 class ComparisonReport:
     """Comprehensive comparison report."""
     title: str
-    results: List[PerformanceResult]
-    summary_stats: Dict[str, Any] = field(default_factory=dict)
-    recommendations: List[str] = field(default_factory=list)
+    results: list[PerformanceResult]
+    summary_stats: dict[str, Any] = field(default_factory=dict)
+    recommendations: list[str] = field(default_factory=list)
     generated_at: float = field(default_factory=time.time)
 
 
@@ -164,7 +160,7 @@ class SystemProfiler:
             return PlatformType.LINUX_X86
     
     @staticmethod
-    def _get_gpu_info() -> Dict[str, Any]:
+    def _get_gpu_info() -> dict[str, Any]:
         """Get GPU information if available."""
         gpu_info = {"available": False}
         
@@ -232,7 +228,7 @@ class SystemProfiler:
 class BenchmarkRunner:
     """Runs performance benchmarks across different backends."""
     
-    def __init__(self, config: Optional[BenchmarkConfig] = None):
+    def __init__(self, config: BenchmarkConfig | None = None):
         self.config = config or BenchmarkConfig()
         self.system_info = SystemProfiler.get_system_info()
         
@@ -242,7 +238,7 @@ class BenchmarkRunner:
         logger.info(f"BenchmarkRunner initialized on {self.system_info.platform_type.value}")
         logger.info(f"Available backends: {[b.value for b in self.available_backends]}")
     
-    def _detect_available_backends(self) -> List[BackendType]:
+    def _detect_available_backends(self) -> list[BackendType]:
         """Detect which backends are available on this system."""
         available = [BackendType.CPU_NUMPY]  # Always available
         
@@ -281,9 +277,9 @@ class BenchmarkRunner:
     
     def run_comprehensive_benchmark(
         self,
-        backends: Optional[List[BackendType]] = None,
+        backends: list[BackendType] | None = None,
         save_results: bool = True,
-        results_file: Optional[str] = None
+        results_file: str | None = None
     ) -> ComparisonReport:
         """Run comprehensive benchmark across all specified backends."""
         if backends is None:
@@ -311,7 +307,7 @@ class BenchmarkRunner:
         
         return report
     
-    def _benchmark_backend(self, backend: BackendType) -> List[PerformanceResult]:
+    def _benchmark_backend(self, backend: BackendType) -> list[PerformanceResult]:
         """Benchmark a specific backend across all test configurations."""
         results = []
         
@@ -337,7 +333,7 @@ class BenchmarkRunner:
         qubits: int,
         depth: int,
         shots: int
-    ) -> Optional[PerformanceResult]:
+    ) -> PerformanceResult | None:
         """Run a single benchmark test."""
         # Generate test circuit
         circuit = self._generate_test_circuit(qubits, depth)
@@ -358,7 +354,7 @@ class BenchmarkRunner:
                 start_memory = psutil.Process().memory_info().rss
                 start_time = time.perf_counter()
                 
-                result = self._execute_circuit(backend, circuit, shots)
+                self._execute_circuit(backend, circuit, shots)
                 
                 end_time = time.perf_counter()
                 end_memory = psutil.Process().memory_info().rss
@@ -410,7 +406,7 @@ class BenchmarkRunner:
         # Add some structure to make it more realistic than pure random
         np.random.seed(42)  # Deterministic for comparison
         
-        for layer in range(depth):
+        for _layer in range(depth):
             # Random single-qubit gates
             for qubit in range(qubits):
                 if np.random.random() < 0.7:  # 70% chance of single-qubit gate
@@ -453,7 +449,7 @@ class BenchmarkRunner:
         
         return circuit
     
-    def _execute_circuit(self, backend: BackendType, circuit: QuantumCircuit, shots: int) -> Dict[str, Any]:
+    def _execute_circuit(self, backend: BackendType, circuit: QuantumCircuit, shots: int) -> dict[str, Any]:
         """Execute circuit on specified backend."""
         if backend == BackendType.CPU_NUMPY:
             return self._execute_cpu_numpy(circuit, shots)
@@ -466,7 +462,7 @@ class BenchmarkRunner:
         else:
             raise NotImplementedError(f"Backend {backend.value} not implemented")
     
-    def _execute_cpu_numpy(self, circuit: QuantumCircuit, shots: int) -> Dict[str, Any]:
+    def _execute_cpu_numpy(self, circuit: QuantumCircuit, shots: int) -> dict[str, Any]:
         """Execute circuit using CPU NumPy backend."""
         # Use Ariadne's built-in CPU backend
         from ariadne.backends.cpu_backend import CPUBackend
@@ -476,7 +472,7 @@ class BenchmarkRunner:
         
         return {"counts": result}
     
-    def _execute_metal_apple(self, circuit: QuantumCircuit, shots: int) -> Dict[str, Any]:
+    def _execute_metal_apple(self, circuit: QuantumCircuit, shots: int) -> dict[str, Any]:
         """Execute circuit using Apple Metal backend."""
         try:
             from ariadne.backends.metal_backend import MetalBackend
@@ -488,7 +484,7 @@ class BenchmarkRunner:
         except ImportError:
             raise RuntimeError("Metal backend not available")
     
-    def _execute_cuda_nvidia(self, circuit: QuantumCircuit, shots: int) -> Dict[str, Any]:
+    def _execute_cuda_nvidia(self, circuit: QuantumCircuit, shots: int) -> dict[str, Any]:
         """Execute circuit using CUDA backend."""
         try:
             from ariadne.backends.cuda_backend import CUDABackend
@@ -500,11 +496,11 @@ class BenchmarkRunner:
         except ImportError:
             raise RuntimeError("CUDA backend not available")
     
-    def _execute_aer_simulator(self, circuit: QuantumCircuit, shots: int) -> Dict[str, Any]:
+    def _execute_aer_simulator(self, circuit: QuantumCircuit, shots: int) -> dict[str, Any]:
         """Execute circuit using Qiskit Aer simulator."""
         try:
+            from qiskit import execute, transpile
             from qiskit_aer import AerSimulator
-            from qiskit import transpile, execute
             
             simulator = AerSimulator()
             transpiled = transpile(circuit, simulator)
@@ -517,8 +513,8 @@ class BenchmarkRunner:
     
     def _generate_comparison_report(
         self,
-        results: List[PerformanceResult],
-        backends: List[BackendType]
+        results: list[PerformanceResult],
+        backends: list[BackendType]
     ) -> ComparisonReport:
         """Generate comprehensive comparison report."""
         
@@ -624,7 +620,7 @@ class PerformanceAnalyzer:
     @staticmethod
     def load_results(filename: str) -> ComparisonReport:
         """Load benchmark results from file."""
-        with open(filename, 'r') as f:
+        with open(filename) as f:
             data = json.load(f)
         
         # Reconstruct results
@@ -663,7 +659,7 @@ class PerformanceAnalyzer:
         )
     
     @staticmethod
-    def compare_platforms(reports: List[ComparisonReport]) -> Dict[str, Any]:
+    def compare_platforms(reports: list[ComparisonReport]) -> dict[str, Any]:
         """Compare performance across multiple platform reports."""
         platform_comparison = {}
         
@@ -718,7 +714,7 @@ class PerformanceAnalyzer:
         }
     
     @staticmethod
-    def generate_scaling_analysis(results: List[PerformanceResult]) -> Dict[str, Any]:
+    def generate_scaling_analysis(results: list[PerformanceResult]) -> dict[str, Any]:
         """Analyze how performance scales with circuit size."""
         scaling_analysis = {}
         
@@ -761,7 +757,7 @@ class PerformanceAnalyzer:
 
 
 # Convenience functions
-def run_quick_comparison(backends: Optional[List[BackendType]] = None) -> ComparisonReport:
+def run_quick_comparison(backends: list[BackendType] | None = None) -> ComparisonReport:
     """Run a quick performance comparison with default settings."""
     config = BenchmarkConfig(
         qubit_ranges=[5, 10, 15],
@@ -780,7 +776,7 @@ def compare_backend_performance(
     qubits: int = 10,
     depth: int = 50,
     shots: int = 1000
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compare two specific backends on a single circuit configuration."""
     config = BenchmarkConfig(
         qubit_ranges=[qubits],

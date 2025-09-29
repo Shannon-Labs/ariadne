@@ -7,10 +7,10 @@ Multi-objective optimization components for intelligent backend selection.
 from .multi_objective import (
     MultiObjectiveOptimizer,
     ObjectiveWeight,
-    OptimizationResult,
     OptimizationObjective,
+    OptimizationResult,
+    find_pareto_optimal_backends,
     optimize_backend_selection,
-    find_pareto_optimal_backends
 )
 
 __all__ = [

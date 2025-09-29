@@ -11,15 +11,14 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Any, Callable
-import numpy as np
+from typing import Any
 
 from qiskit import QuantumCircuit
 
-from ..route.enhanced_router import UserContext, RouteScore, RouterType
 from ..route.analyze import analyze_circuit
-from ..router import BackendType
+from ..route.enhanced_router import UserContext
 from ..route.performance_model import PerformancePredictor, PredictionResult
+from ..router import BackendType
 
 
 class OptimizationObjective(Enum):
@@ -66,11 +65,11 @@ class OptimizationResult:
     """Result of multi-objective optimization."""
     backend: BackendType
     total_score: float
-    objective_scores: Dict[str, float]
-    trade_off_analysis: Dict[str, Any]
+    objective_scores: dict[str, float]
+    trade_off_analysis: dict[str, Any]
     pareto_rank: int
-    dominated_solutions: List[BackendType]
-    dominates_solutions: List[BackendType]
+    dominated_solutions: list[BackendType]
+    dominates_solutions: list[BackendType]
 
 
 @dataclass
@@ -105,7 +104,7 @@ class BackendObjectiveScores:
 class ParetoOptimizer:
     """Pareto-optimal solution finder for multi-objective optimization."""
     
-    def find_pareto_front(self, solutions: List[BackendObjectiveScores]) -> List[BackendObjectiveScores]:
+    def find_pareto_front(self, solutions: list[BackendObjectiveScores]) -> list[BackendObjectiveScores]:
         """Find Pareto-optimal solutions."""
         pareto_front = []
         
@@ -161,7 +160,7 @@ class ParetoOptimizer:
         
         return equal_or_better_count == len(objectives) and better_count > 0
     
-    def rank_solutions(self, solutions: List[BackendObjectiveScores]) -> Dict[BackendObjectiveScores, int]:
+    def rank_solutions(self, solutions: list[BackendObjectiveScores]) -> dict[BackendObjectiveScores, int]:
         """Assign Pareto ranks to solutions (0 = best)."""
         remaining_solutions = solutions.copy()
         ranks = {}
@@ -182,7 +181,7 @@ class ParetoOptimizer:
 class ObjectiveScorer:
     """Score backends against various objectives."""
     
-    def __init__(self, performance_predictor: Optional[PerformancePredictor] = None):
+    def __init__(self, performance_predictor: PerformancePredictor | None = None):
         self.performance_predictor = performance_predictor or PerformancePredictor()
     
     def score_backend_objectives(self, circuit: QuantumCircuit, backend: BackendType,
@@ -237,7 +236,7 @@ class ObjectiveScorer:
         else:  # Uses > 80% of system memory
             return 0.1
     
-    def _score_energy_consumption(self, backend: BackendType, analysis: Dict[str, Any],
+    def _score_energy_consumption(self, backend: BackendType, analysis: dict[str, Any],
                                 context: UserContext) -> float:
         """Score energy consumption (lower consumption = higher score)."""
         # Base energy scores for backends (higher = more energy efficient)
@@ -283,7 +282,7 @@ class ObjectiveScorer:
         # Convert to score (lower cost = higher score)
         return 1.0 / (1.0 + total_cost)
     
-    def _score_accuracy(self, backend: BackendType, analysis: Dict[str, Any]) -> float:
+    def _score_accuracy(self, backend: BackendType, analysis: dict[str, Any]) -> float:
         """Score numerical accuracy."""
         # Base accuracy scores
         base_accuracy = {
@@ -309,12 +308,12 @@ class ObjectiveScorer:
 class MultiObjectiveOptimizer:
     """Main multi-objective optimization engine."""
     
-    def __init__(self, performance_predictor: Optional[PerformancePredictor] = None):
+    def __init__(self, performance_predictor: PerformancePredictor | None = None):
         self.objective_scorer = ObjectiveScorer(performance_predictor)
         self.pareto_optimizer = ParetoOptimizer()
     
-    def optimize(self, circuit: QuantumCircuit, available_backends: List[BackendType],
-                context: UserContext, weights: Optional[ObjectiveWeight] = None) -> List[OptimizationResult]:
+    def optimize(self, circuit: QuantumCircuit, available_backends: list[BackendType],
+                context: UserContext, weights: ObjectiveWeight | None = None) -> list[OptimizationResult]:
         """Perform multi-objective optimization."""
         
         if weights is None:
@@ -375,8 +374,8 @@ class MultiObjectiveOptimizer:
         
         return optimization_results
     
-    def find_optimal_backend(self, circuit: QuantumCircuit, available_backends: List[BackendType],
-                           context: UserContext, weights: Optional[ObjectiveWeight] = None) -> OptimizationResult:
+    def find_optimal_backend(self, circuit: QuantumCircuit, available_backends: list[BackendType],
+                           context: UserContext, weights: ObjectiveWeight | None = None) -> OptimizationResult:
         """Find single optimal backend based on multi-objective optimization."""
         results = self.optimize(circuit, available_backends, context, weights)
         return results[0] if results else None
@@ -407,7 +406,7 @@ class MultiObjectiveOptimizer:
         )
     
     def _analyze_trade_offs(self, scores: BackendObjectiveScores, 
-                          all_scores: List[BackendObjectiveScores]) -> Dict[str, Any]:
+                          all_scores: list[BackendObjectiveScores]) -> dict[str, Any]:
         """Analyze trade-offs for this solution."""
         # Find best scores for each objective
         best_scores = {
@@ -450,15 +449,15 @@ class MultiObjectiveOptimizer:
 
 
 # Convenience functions for easy integration
-def optimize_backend_selection(circuit: QuantumCircuit, available_backends: List[BackendType],
-                             context: UserContext, weights: Optional[ObjectiveWeight] = None) -> OptimizationResult:
+def optimize_backend_selection(circuit: QuantumCircuit, available_backends: list[BackendType],
+                             context: UserContext, weights: ObjectiveWeight | None = None) -> OptimizationResult:
     """Convenience function for multi-objective backend optimization."""
     optimizer = MultiObjectiveOptimizer()
     return optimizer.find_optimal_backend(circuit, available_backends, context, weights)
 
 
-def find_pareto_optimal_backends(circuit: QuantumCircuit, available_backends: List[BackendType],
-                               context: UserContext) -> List[OptimizationResult]:
+def find_pareto_optimal_backends(circuit: QuantumCircuit, available_backends: list[BackendType],
+                               context: UserContext) -> list[OptimizationResult]:
     """Find all Pareto-optimal backend choices."""
     optimizer = MultiObjectiveOptimizer()
     results = optimizer.optimize(circuit, available_backends, context)

@@ -10,16 +10,14 @@ from __future__ import annotations
 import json
 import platform
 import time
-from dataclasses import dataclass, field, asdict
-from enum import Enum
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
 from collections import defaultdict, deque
+from dataclasses import asdict, dataclass
+from pathlib import Path
 
 from qiskit import QuantumCircuit
 
-from .enhanced_router import WorkflowType, UserContext, HardwareProfile, PerformancePreferences
 from ..router import BackendType
+from .enhanced_router import HardwareProfile, PerformancePreferences, UserContext, WorkflowType
 
 
 @dataclass
@@ -28,9 +26,9 @@ class CircuitPattern:
     avg_qubits: float
     avg_depth: float
     clifford_ratio: float
-    common_gates: List[str]
+    common_gates: list[str]
     entanglement_complexity: float
-    circuit_families: List[str]  # ['optimization', 'ml', 'cryptography', etc.]
+    circuit_families: list[str]  # ['optimization', 'ml', 'cryptography', etc.]
 
 
 @dataclass
@@ -38,19 +36,19 @@ class UsagePattern:
     """User usage patterns and preferences."""
     session_count: int
     total_circuits: int
-    preferred_shot_counts: List[int]
-    time_of_day_preferences: List[int]  # Hours when user is most active
-    backend_success_rates: Dict[str, float]
+    preferred_shot_counts: list[int]
+    time_of_day_preferences: list[int]  # Hours when user is most active
+    backend_success_rates: dict[str, float]
     average_session_length: float  # Minutes
 
 
 @dataclass
 class PerformanceHistory:
     """Historical performance data for learning."""
-    backend_performance: Dict[BackendType, List[float]]  # Execution times
-    user_satisfaction_scores: Dict[BackendType, List[float]]  # Implicit satisfaction
-    error_rates: Dict[BackendType, float]
-    memory_usage_patterns: Dict[BackendType, List[float]]
+    backend_performance: dict[BackendType, list[float]]  # Execution times
+    user_satisfaction_scores: dict[BackendType, list[float]]  # Implicit satisfaction
+    error_rates: dict[BackendType, float]
+    memory_usage_patterns: dict[BackendType, list[float]]
 
 
 class CircuitFamilyDetector:
@@ -90,7 +88,7 @@ class CircuitFamilyDetector:
         }
     }
     
-    def detect_circuit_family(self, circuit: QuantumCircuit) -> List[str]:
+    def detect_circuit_family(self, circuit: QuantumCircuit) -> list[str]:
         """Detect which algorithm families this circuit likely belongs to."""
         gate_counts = self._count_gates(circuit)
         total_gates = sum(gate_counts.values())
@@ -132,7 +130,7 @@ class CircuitFamilyDetector:
         
         return sorted(detected_families, key=lambda f: family_scores[f], reverse=True)
     
-    def _count_gates(self, circuit: QuantumCircuit) -> Dict[str, int]:
+    def _count_gates(self, circuit: QuantumCircuit) -> dict[str, int]:
         """Count gate types in circuit."""
         gate_counts = defaultdict(int)
         
@@ -146,7 +144,7 @@ class CircuitFamilyDetector:
 class WorkflowDetector:
     """Detect user workflow patterns from circuit and usage patterns."""
     
-    def detect_workflow_type(self, circuit_patterns: List[CircuitPattern], 
+    def detect_workflow_type(self, circuit_patterns: list[CircuitPattern], 
                            usage_patterns: UsagePattern) -> WorkflowType:
         """Infer workflow type from patterns."""
         
@@ -169,7 +167,7 @@ class WorkflowDetector:
         # Default to research
         return WorkflowType.RESEARCH
     
-    def _is_educational_pattern(self, circuit_patterns: List[CircuitPattern], 
+    def _is_educational_pattern(self, circuit_patterns: list[CircuitPattern], 
                               usage_patterns: UsagePattern) -> bool:
         """Detect educational usage patterns."""
         if not circuit_patterns:
@@ -187,7 +185,7 @@ class WorkflowDetector:
         
         return sum(indicators) >= 3
     
-    def _is_research_pattern(self, circuit_patterns: List[CircuitPattern], 
+    def _is_research_pattern(self, circuit_patterns: list[CircuitPattern], 
                            usage_patterns: UsagePattern) -> bool:
         """Detect research usage patterns."""
         if not circuit_patterns:
@@ -205,7 +203,7 @@ class WorkflowDetector:
         
         return sum(indicators) >= 2
     
-    def _is_production_pattern(self, circuit_patterns: List[CircuitPattern], 
+    def _is_production_pattern(self, circuit_patterns: list[CircuitPattern], 
                              usage_patterns: UsagePattern) -> bool:
         """Detect production usage patterns."""
         if not circuit_patterns:
@@ -223,7 +221,7 @@ class WorkflowDetector:
         
         return sum(indicators) >= 3
     
-    def _is_benchmarking_pattern(self, circuit_patterns: List[CircuitPattern], 
+    def _is_benchmarking_pattern(self, circuit_patterns: list[CircuitPattern], 
                                usage_patterns: UsagePattern) -> bool:
         """Detect benchmarking usage patterns."""
         if not circuit_patterns:
@@ -238,7 +236,7 @@ class WorkflowDetector:
         
         return sum(indicators) >= 2
     
-    def _average_circuit_pattern(self, patterns: List[CircuitPattern]) -> CircuitPattern:
+    def _average_circuit_pattern(self, patterns: list[CircuitPattern]) -> CircuitPattern:
         """Compute average circuit pattern."""
         if not patterns:
             return CircuitPattern(0, 0, 0, [], 0, [])
@@ -298,7 +296,7 @@ class HardwareProfiler:
         try:
             import multiprocessing
             return multiprocessing.cpu_count()
-        except:
+        except Exception:
             return 4  # Reasonable default
     
     def _detect_memory_gb(self) -> float:
@@ -306,7 +304,7 @@ class HardwareProfiler:
         try:
             import psutil
             return psutil.virtual_memory().total / (1024**3)
-        except:
+        except Exception:
             return 8.0  # Default assumption
     
     def _detect_gpu_available(self) -> bool:
@@ -322,14 +320,14 @@ class HardwareProfiler:
         try:
             import cupy
             return cupy.cuda.runtime.getDeviceCount() > 0
-        except:
+        except Exception:
             return False
 
 
 class ContextDetector:
     """Main context detection and management system."""
     
-    def __init__(self, cache_file: Optional[str] = None):
+    def __init__(self, cache_file: str | None = None):
         """Initialize context detector with optional caching."""
         self.cache_file = Path(cache_file) if cache_file else Path.home() / '.ariadne' / 'context_cache.json'
         self.cache_file.parent.mkdir(parents=True, exist_ok=True)
@@ -343,9 +341,9 @@ class ContextDetector:
         self.session_start_time = time.time()
         self.performance_history = self._load_performance_history()
     
-    def analyze_user_context(self, circuit_history: List[QuantumCircuit], 
-                           backend_usage: Dict[BackendType, int] = None,
-                           execution_times: Dict[BackendType, List[float]] = None) -> UserContext:
+    def analyze_user_context(self, circuit_history: list[QuantumCircuit], 
+                           backend_usage: dict[BackendType, int] = None,
+                           execution_times: dict[BackendType, list[float]] = None) -> UserContext:
         """Analyze comprehensive user context from circuit history and usage patterns."""
         
         # Analyze circuit patterns
@@ -380,7 +378,7 @@ class ContextDetector:
         
         return context
     
-    def _analyze_circuit_patterns(self, circuits: List[QuantumCircuit]) -> List[CircuitPattern]:
+    def _analyze_circuit_patterns(self, circuits: list[QuantumCircuit]) -> list[CircuitPattern]:
         """Analyze patterns in circuit collection."""
         if not circuits:
             return []
@@ -392,14 +390,14 @@ class ContextDetector:
         for circuit in circuits:
             qubit_groups[circuit.num_qubits].append(circuit)
         
-        for qubit_count, group_circuits in qubit_groups.items():
+        for _qubit_count, group_circuits in qubit_groups.items():
             if len(group_circuits) >= 3:  # Only analyze groups with sufficient data
                 pattern = self._analyze_circuit_group(group_circuits)
                 patterns.append(pattern)
         
         return patterns
     
-    def _analyze_circuit_group(self, circuits: List[QuantumCircuit]) -> CircuitPattern:
+    def _analyze_circuit_group(self, circuits: list[QuantumCircuit]) -> CircuitPattern:
         """Analyze a group of similar circuits."""
         avg_qubits = sum(c.num_qubits for c in circuits) / len(circuits)
         avg_depth = sum(c.depth() for c in circuits) / len(circuits)
@@ -464,8 +462,8 @@ class ContextDetector:
             circuit_families=circuit_families
         )
     
-    def _analyze_usage_patterns(self, circuits: List[QuantumCircuit], 
-                              backend_usage: Dict[BackendType, int]) -> UsagePattern:
+    def _analyze_usage_patterns(self, circuits: list[QuantumCircuit], 
+                              backend_usage: dict[BackendType, int]) -> UsagePattern:
         """Analyze user usage patterns."""
         session_count = 1  # Current session
         total_circuits = len(circuits)
@@ -481,7 +479,7 @@ class ContextDetector:
         )
     
     def _infer_performance_preferences(self, workflow_type: WorkflowType, 
-                                     execution_times: Dict[BackendType, List[float]]) -> PerformancePreferences:
+                                     execution_times: dict[BackendType, list[float]]) -> PerformancePreferences:
         """Infer user performance preferences from workflow and history."""
         
         if workflow_type == WorkflowType.EDUCATION:
@@ -517,7 +515,7 @@ class ContextDetector:
                 energy_priority=0.1
             )
     
-    def _determine_preferred_backends(self, backend_usage: Dict[BackendType, int]) -> List[BackendType]:
+    def _determine_preferred_backends(self, backend_usage: dict[BackendType, int]) -> list[BackendType]:
         """Determine preferred backends from usage history."""
         if not backend_usage:
             return []
@@ -530,7 +528,7 @@ class ContextDetector:
         """Load performance history from cache."""
         try:
             if self.cache_file.exists():
-                with open(self.cache_file, 'r') as f:
+                with open(self.cache_file) as f:
                     data = json.load(f)
                     # Convert string keys back to BackendType
                     backend_performance = {}
@@ -547,7 +545,7 @@ class ContextDetector:
                         error_rates={},
                         memory_usage_patterns={}
                     )
-        except:
+        except Exception:
             pass
         
         return PerformanceHistory(
@@ -589,8 +587,8 @@ class ContextDetector:
 
 
 # Convenience function for easy integration
-def detect_user_context(circuit_history: Optional[List[QuantumCircuit]] = None,
-                       cache_file: Optional[str] = None) -> UserContext:
+def detect_user_context(circuit_history: list[QuantumCircuit] | None = None,
+                       cache_file: str | None = None) -> UserContext:
     """Convenience function to detect user context."""
     detector = ContextDetector(cache_file)
     return detector.analyze_user_context(circuit_history or [])

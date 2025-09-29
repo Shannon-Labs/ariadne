@@ -9,14 +9,12 @@ settings, and hardware-specific configurations.
 from __future__ import annotations
 
 import json
-import os
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
-import yaml
+from typing import Any
 
-from .router import BackendType
+import yaml
 
 
 class ConfigFormat(Enum):
@@ -36,22 +34,22 @@ class BackendConfig:
     
     # Performance tuning
     capacity_boost: float = 1.0
-    memory_limit_mb: Optional[int] = None
-    timeout_seconds: Optional[float] = None
+    memory_limit_mb: int | None = None
+    timeout_seconds: float | None = None
     
     # Hardware-specific options
     device_id: int = 0
     use_gpu: bool = True
     
     # Backend-specific parameters
-    custom_options: Dict[str, Any] = field(default_factory=dict)
+    custom_options: dict[str, Any] = field(default_factory=dict)
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return asdict(self)
     
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'BackendConfig':
+    def from_dict(cls, data: dict[str, Any]) -> BackendConfig:
         """Create from dictionary."""
         custom_options = data.pop('custom_options', {})
         config = cls(**data)
@@ -70,9 +68,9 @@ class OptimizationConfig:
     enable_gate_fusion: bool = True
     
     # Transpiler options
-    basis_gates: Optional[List[str]] = None
-    coupling_map: Optional[List[List[int]]] = None
-    seed_transpiler: Optional[int] = None
+    basis_gates: list[str] | None = None
+    coupling_map: list[list[int]] | None = None
+    seed_transpiler: int | None = None
     
     # Advanced options
     max_optimization_passes: int = 100
@@ -89,7 +87,7 @@ class ErrorMitigationConfig:
     enable_symmetry_verification: bool = False
     
     # ZNE parameters
-    zne_noise_factors: List[float] = field(default_factory=lambda: [1.0, 1.5, 2.0])
+    zne_noise_factors: list[float] = field(default_factory=lambda: [1.0, 1.5, 2.0])
     zne_extrapolation_method: str = "linear"
     
     # CDR parameters
@@ -140,7 +138,7 @@ class AriadneConfig:
     """Complete Ariadne configuration."""
     
     # Backend configurations
-    backends: Dict[str, BackendConfig] = field(default_factory=dict)
+    backends: dict[str, BackendConfig] = field(default_factory=dict)
     
     # Component configurations
     optimization: OptimizationConfig = field(default_factory=OptimizationConfig)
@@ -150,12 +148,12 @@ class AriadneConfig:
     
     # Global settings
     default_shots: int = 1000
-    random_seed: Optional[int] = None
+    random_seed: int | None = None
     log_level: str = "INFO"
     
     # Paths
-    cache_dir: Optional[str] = None
-    data_dir: Optional[str] = None
+    cache_dir: str | None = None
+    data_dir: str | None = None
     
     def __post_init__(self):
         """Initialize default backend configurations."""
@@ -222,7 +220,7 @@ class AriadneConfig:
             )
         }
     
-    def get_backend_priority_list(self) -> List[str]:
+    def get_backend_priority_list(self) -> list[str]:
         """Get backends sorted by priority (highest first)."""
         enabled_backends = {
             name: config for name, config in self.backends.items() 
@@ -247,7 +245,7 @@ class AriadneConfig:
             else:
                 config.custom_options[key] = value
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary."""
         return {
             'backends': {name: config.to_dict() for name, config in self.backends.items()},
@@ -263,7 +261,7 @@ class AriadneConfig:
         }
     
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'AriadneConfig':
+    def from_dict(cls, data: dict[str, Any]) -> AriadneConfig:
         """Create configuration from dictionary."""
         # Extract backend configs
         backend_data = data.pop('backends', {})
@@ -294,7 +292,7 @@ class AriadneConfig:
 class ConfigManager:
     """Configuration manager for Ariadne."""
     
-    def __init__(self, config_file: Optional[Path] = None):
+    def __init__(self, config_file: Path | None = None):
         """Initialize configuration manager."""
         self.config_file = config_file or self._get_default_config_path()
         self.config = AriadneConfig()
@@ -322,7 +320,7 @@ class ConfigManager:
         config_dir.mkdir(exist_ok=True)
         return config_dir / "config.yaml"
     
-    def load_config(self, file_path: Optional[Path] = None) -> None:
+    def load_config(self, file_path: Path | None = None) -> None:
         """Load configuration from file."""
         file_path = file_path or self.config_file
         
@@ -330,7 +328,7 @@ class ConfigManager:
             return
         
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 if file_path.suffix.lower() == '.json':
                     data = json.load(f)
                 elif file_path.suffix.lower() in ['.yaml', '.yml']:
@@ -344,7 +342,7 @@ class ConfigManager:
             print(f"Warning: Failed to load config from {file_path}: {e}")
             print("Using default configuration.")
     
-    def save_config(self, file_path: Optional[Path] = None) -> None:
+    def save_config(self, file_path: Path | None = None) -> None:
         """Save configuration to file."""
         file_path = file_path or self.config_file
         
@@ -368,7 +366,7 @@ class ConfigManager:
         except Exception as e:
             print(f"Error saving config to {file_path}: {e}")
     
-    def get_backend_config(self, backend_name: str) -> Optional[BackendConfig]:
+    def get_backend_config(self, backend_name: str) -> BackendConfig | None:
         """Get configuration for a specific backend."""
         return self.config.backends.get(backend_name)
     
@@ -380,7 +378,7 @@ class ConfigManager:
         """Enable or disable a backend."""
         self.config.update_backend_config(backend_name, enabled=enabled)
     
-    def get_preferred_backends(self) -> List[str]:
+    def get_preferred_backends(self) -> list[str]:
         """Get list of backends in preference order."""
         return self.config.get_backend_priority_list()
     
@@ -510,7 +508,7 @@ class ConfigManager:
 
 
 # Global configuration manager instance
-_config_manager: Optional[ConfigManager] = None
+_config_manager: ConfigManager | None = None
 
 
 def get_config() -> AriadneConfig:
@@ -529,7 +527,7 @@ def get_config_manager() -> ConfigManager:
     return _config_manager
 
 
-def configure_ariadne(config_file: Optional[Path] = None) -> None:
+def configure_ariadne(config_file: Path | None = None) -> None:
     """Initialize Ariadne with configuration file."""
     global _config_manager
     _config_manager = ConfigManager(config_file)
@@ -541,11 +539,11 @@ def set_backend_preference(backend_name: str, priority: int) -> None:
     get_config_manager().set_backend_preference(backend_name, priority)
 
 
-def get_preferred_backends() -> List[str]:
+def get_preferred_backends() -> list[str]:
     """Get globally preferred backends."""
     return get_config_manager().get_preferred_backends()
 
 
-def save_config(file_path: Optional[Path] = None) -> None:
+def save_config(file_path: Path | None = None) -> None:
     """Save global configuration."""
     get_config_manager().save_config(file_path)

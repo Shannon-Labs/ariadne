@@ -10,11 +10,9 @@ from __future__ import annotations
 import math
 import warnings
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, Any, Union
 
 from qiskit import QuantumCircuit
 
-from ..route.analyze import analyze_circuit
 from ..router import BackendType
 
 
@@ -51,7 +49,7 @@ class PredictionResult:
     predicted_memory_mb: float
     predicted_success_rate: float
     confidence_score: float
-    feature_importance: Dict[str, float]
+    feature_importance: dict[str, float]
 
 
 class CircuitFeatureExtractor:
@@ -90,7 +88,7 @@ class CircuitFeatureExtractor:
             entanglement_complexity=entanglement_complexity
         )
     
-    def _count_gates(self, circuit: QuantumCircuit) -> Dict[str, int]:
+    def _count_gates(self, circuit: QuantumCircuit) -> dict[str, int]:
         """Count gates by type."""
         gate_counts = {}
         for instruction, _, _ in circuit.data:
@@ -305,12 +303,12 @@ class PerformancePredictor:
         """Record actual performance (No ML training, just logging/future use)."""
         # Since ML is removed, this function now serves as a placeholder or logging hook.
         # We keep it to avoid breaking external calls, but it does nothing related to training.
-        warnings.warn("ML training is disabled. Actual performance recording is currently a no-op.")
+        warnings.warn("ML training is disabled. Actual performance recording is currently a no-op.", stacklevel=2)
         pass
     
     def get_best_backend_for_circuit(self, circuit: QuantumCircuit, 
-                                   available_backends: List[BackendType],
-                                   optimize_for: str = 'time') -> Tuple[BackendType, PredictionResult]:
+                                   available_backends: list[BackendType],
+                                   optimize_for: str = 'time') -> tuple[BackendType, PredictionResult]:
         """Find best backend for circuit based on optimization criterion."""
         predictions = {}
         
@@ -342,8 +340,8 @@ def predict_circuit_performance(circuit: QuantumCircuit, backend: BackendType) -
 
 
 def find_optimal_backend(circuit: QuantumCircuit, 
-                        available_backends: List[BackendType],
-                        optimize_for: str = 'time') -> Tuple[BackendType, PredictionResult]:
+                        available_backends: list[BackendType],
+                        optimize_for: str = 'time') -> tuple[BackendType, PredictionResult]:
     """Convenience function to find optimal backend."""
     predictor = PerformancePredictor()
     return predictor.get_best_backend_for_circuit(circuit, available_backends, optimize_for)

@@ -17,9 +17,9 @@ Cirq Features:
 from __future__ import annotations
 
 import warnings
-from typing import Dict, List, Optional, Tuple, Any, Union
-import numpy as np
+from typing import Any
 
+import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
 
@@ -29,8 +29,8 @@ class CirqBackend:
     
     def __init__(self, 
                  simulator_type: str = 'density_matrix',
-                 noise_model: Optional[str] = None,
-                 device_name: Optional[str] = None,
+                 noise_model: str | None = None,
+                 device_name: str | None = None,
                  enable_optimization: bool = True):
         """
         Initialize Cirq backend.
@@ -81,10 +81,10 @@ class CirqBackend:
             try:
                 return cirq.StabilizerSimulator()
             except AttributeError:
-                warnings.warn("StabilizerSimulator not available, using regular simulator")
+                warnings.warn("StabilizerSimulator not available, using regular simulator", stacklevel=2)
                 return cirq.Simulator()
         else:
-            warnings.warn(f"Unknown simulator type {self.simulator_type}, using default")
+            warnings.warn(f"Unknown simulator type {self.simulator_type}, using default", stacklevel=2)
             return cirq.Simulator()
     
     def _create_device(self):
@@ -92,7 +92,6 @@ class CirqBackend:
         if not self.device_name:
             return None
         
-        import cirq
         import cirq_google
         
         try:
@@ -103,10 +102,10 @@ class CirqBackend:
             elif self.device_name.lower() == 'weber':
                 return cirq_google.Weber
             else:
-                warnings.warn(f"Unknown device {self.device_name}")
+                warnings.warn(f"Unknown device {self.device_name}", stacklevel=2)
                 return None
         except ImportError:
-            warnings.warn("cirq_google not available, device simulation disabled")
+            warnings.warn("cirq_google not available, device simulation disabled", stacklevel=2)
             return None
     
     def _create_noise_model(self):
@@ -114,7 +113,6 @@ class CirqBackend:
         if not self.noise_model:
             return None
         
-        import cirq
         
         try:
             if self.noise_model == 'depolarizing':
@@ -124,10 +122,10 @@ class CirqBackend:
             elif self.noise_model == 'realistic':
                 return self._create_realistic_noise()
             else:
-                warnings.warn(f"Unknown noise model {self.noise_model}")
+                warnings.warn(f"Unknown noise model {self.noise_model}", stacklevel=2)
                 return None
         except Exception as e:
-            warnings.warn(f"Failed to create noise model: {e}")
+            warnings.warn(f"Failed to create noise model: {e}", stacklevel=2)
             return None
     
     def _create_depolarizing_noise(self):
@@ -190,7 +188,7 @@ class CirqBackend:
         
         return noise_model
     
-    def simulate(self, circuit: QuantumCircuit, shots: int = 1000) -> Dict[str, int]:
+    def simulate(self, circuit: QuantumCircuit, shots: int = 1000) -> dict[str, int]:
         """
         Simulate quantum circuit using Cirq.
         
@@ -229,10 +227,10 @@ class CirqBackend:
             
         except Exception as e:
             # Fallback to Qiskit simulation
-            warnings.warn(f"Cirq simulation failed: {e}, falling back to Qiskit")
+            warnings.warn(f"Cirq simulation failed: {e}, falling back to Qiskit", stacklevel=2)
             return self._simulate_with_qiskit(circuit, shots)
     
-    def _convert_qiskit_to_cirq(self, circuit: QuantumCircuit) -> Tuple[Any, Dict]:
+    def _convert_qiskit_to_cirq(self, circuit: QuantumCircuit) -> tuple[Any, dict]:
         """Convert Qiskit circuit to Cirq circuit."""
         import cirq
         
@@ -273,7 +271,7 @@ class CirqBackend:
         }
         
         # Convert each instruction
-        for instruction, qubits_used, clbits in circuit.data:
+        for instruction, qubits_used, _clbits in circuit.data:
             gate_name = instruction.name.lower()
             cirq_qubits = [qubit_map[q] for q in qubits_used]
             
@@ -314,7 +312,7 @@ class CirqBackend:
                 cirq_operations.append(cirq.TOFFOLI(cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]))
             
             else:
-                warnings.warn(f"Unsupported gate: {gate_name}, skipping")
+                warnings.warn(f"Unsupported gate: {gate_name}, skipping", stacklevel=2)
         
         # Add measurement operations
         if circuit.num_clbits > 0:
@@ -330,7 +328,6 @@ class CirqBackend:
     
     def _apply_device_constraints(self, cirq_circuit):
         """Apply device-specific constraints."""
-        import cirq
         
         if not self.device:
             return cirq_circuit
@@ -340,7 +337,7 @@ class CirqBackend:
             self.device.validate_circuit(cirq_circuit)
             return cirq_circuit
         except Exception as e:
-            warnings.warn(f"Circuit validation failed: {e}, running without device constraints")
+            warnings.warn(f"Circuit validation failed: {e}, running without device constraints", stacklevel=2)
             return cirq_circuit
     
     def _optimize_circuit(self, cirq_circuit):
@@ -374,12 +371,11 @@ class CirqBackend:
             
             return noisy_circuit
         except Exception as e:
-            warnings.warn(f"Failed to add noise: {e}")
+            warnings.warn(f"Failed to add noise: {e}", stacklevel=2)
             return cirq_circuit
     
-    def _simulate_with_shots(self, cirq_circuit, shots: int) -> Dict[str, int]:
+    def _simulate_with_shots(self, cirq_circuit, shots: int) -> dict[str, int]:
         """Simulate with finite shots."""
-        import cirq
         
         try:
             result = self.simulator.run(cirq_circuit, repetitions=shots)
@@ -402,15 +398,15 @@ class CirqBackend:
             return counts
             
         except Exception as e:
-            warnings.warn(f"Shot simulation failed: {e}")
+            warnings.warn(f"Shot simulation failed: {e}", stacklevel=2)
             return self._generate_random_counts(cirq_circuit, shots)
     
-    def _simulate_exact(self, cirq_circuit) -> Dict[str, int]:
+    def _simulate_exact(self, cirq_circuit) -> dict[str, int]:
         """Simulate exactly (state vector)."""
         # For exact simulation, we'll still use shots for consistency
         return self._simulate_with_shots(cirq_circuit, 1000)
     
-    def _generate_random_counts(self, cirq_circuit, shots: int) -> Dict[str, int]:
+    def _generate_random_counts(self, cirq_circuit, shots: int) -> dict[str, int]:
         """Generate random counts as fallback."""
         # Estimate number of qubits from circuit
         all_qubits = set()
@@ -426,7 +422,7 @@ class CirqBackend:
         
         return counts
     
-    def _simulate_with_qiskit(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
+    def _simulate_with_qiskit(self, circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         """Fallback simulation using Qiskit."""
         try:
             from qiskit.providers.basic_provider import BasicProvider
@@ -441,7 +437,7 @@ class CirqBackend:
         except ImportError:
             raise RuntimeError("Neither Cirq nor Qiskit BasicProvider available")
     
-    def get_backend_info(self) -> Dict[str, Any]:
+    def get_backend_info(self) -> dict[str, Any]:
         """Get information about the backend configuration."""
         info = {
             'name': 'cirq',
@@ -468,7 +464,7 @@ class CirqBackend:
         return info
     
     def estimate_fidelity(self, circuit: QuantumCircuit, 
-                         ideal_backend: Optional['CirqBackend'] = None) -> float:
+                         ideal_backend: CirqBackend | None = None) -> float:
         """
         Estimate circuit fidelity by comparing with ideal simulation.
         
@@ -500,11 +496,11 @@ class CirqBackend:
             return fidelity
             
         except Exception as e:
-            warnings.warn(f"Fidelity estimation failed: {e}")
+            warnings.warn(f"Fidelity estimation failed: {e}", stacklevel=2)
             return 0.5  # Conservative estimate
     
-    def _calculate_fidelity(self, ideal_counts: Dict[str, int], 
-                           noisy_counts: Dict[str, int]) -> float:
+    def _calculate_fidelity(self, ideal_counts: dict[str, int], 
+                           noisy_counts: dict[str, int]) -> float:
         """Calculate fidelity between two count distributions."""
         # Normalize counts to probabilities
         ideal_total = sum(ideal_counts.values())
@@ -541,7 +537,7 @@ def is_cirq_google_available() -> bool:
         return False
 
 
-def list_cirq_devices() -> List[str]:
+def list_cirq_devices() -> list[str]:
     """List available Cirq devices."""
     devices = []
     
@@ -552,8 +548,8 @@ def list_cirq_devices() -> List[str]:
 
 
 def create_cirq_backend(simulator_type: str = 'density_matrix',
-                       noise_model: Optional[str] = None,
-                       device_name: Optional[str] = None,
+                       noise_model: str | None = None,
+                       device_name: str | None = None,
                        enable_optimization: bool = True) -> CirqBackend:
     """
     Factory function to create a Cirq backend.
@@ -576,8 +572,8 @@ def create_cirq_backend(simulator_type: str = 'density_matrix',
 
 
 def benchmark_cirq_noise_models(circuit: QuantumCircuit,
-                              noise_models: List[str] = ['depolarizing', 'amplitude_damping', 'realistic'],
-                              shots: int = 10000) -> Dict[str, Any]:
+                              noise_models: list[str] = None,
+                              shots: int = 10000) -> dict[str, Any]:
     """
     Benchmark different noise models with Cirq.
     
@@ -591,6 +587,8 @@ def benchmark_cirq_noise_models(circuit: QuantumCircuit,
     """
     import time
     
+    if noise_models is None:
+        noise_models = ['depolarizing', 'amplitude_damping', 'realistic']
     results = {}
     
     # Ideal (noiseless) simulation for reference
