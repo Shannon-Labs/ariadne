@@ -14,9 +14,9 @@ from typing import Dict, List, Optional, Any
 from abc import ABC, abstractmethod
 
 from qiskit import QuantumCircuit
+from ..types import BackendType, RoutingDecision
 from ..route.analyze import analyze_circuit, is_clifford_circuit
 from ..route.mps_analyzer import should_use_mps
-from ..router import BackendType, RoutingDecision
 
 
 class RouterType(Enum):

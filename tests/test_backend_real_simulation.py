@@ -9,7 +9,7 @@ from ariadne.backends.tensor_network_backend import (
     TensorNetworkBackend,
     TensorNetworkOptions,
 )
-from ariadne.router import QuantumRouter
+from ariadne.router import EnhancedQuantumRouter
 
 
 def test_tensor_network_backend_matches_statevector_distribution() -> None:
@@ -52,7 +52,7 @@ def test_jax_metal_backend_matches_statevector(monkeypatch) -> None:
     qc.h(0)
     qc.cx(0, 1)
 
-    router = QuantumRouter()
+    router = EnhancedQuantumRouter()
     counts = router._simulate_jax_metal(qc, shots=256)
 
     state = Statevector.from_instruction(qc)

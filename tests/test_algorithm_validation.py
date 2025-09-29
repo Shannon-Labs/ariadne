@@ -19,7 +19,7 @@ from qiskit.circuit.random import random_circuit
 from qiskit.quantum_info import Statevector, state_fidelity
 
 from ariadne import simulate
-from ariadne.router import QuantumRouter, BackendType
+from ariadne.router import EnhancedQuantumRouter, BackendType
 
 
 class TestQuantumAlgorithms:
@@ -27,7 +27,7 @@ class TestQuantumAlgorithms:
 
     def setup_method(self):
         """Setup for each test method."""
-        self.router = QuantumRouter()
+        self.router = EnhancedQuantumRouter()
         self.tolerance = 1e-10  # Tolerance for numerical comparisons
 
     def test_ghz_state_preparation(self):

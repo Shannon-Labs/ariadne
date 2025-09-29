@@ -3,16 +3,16 @@
 import pytest
 from qiskit import QuantumCircuit
 
-from ariadne import QuantumRouter, simulate
+from ariadne import EnhancedQuantumRouter, simulate
 from ariadne.route.analyze import analyze_circuit
 
 
-class TestQuantumRouter:
-    """Test the QuantumRouter class."""
+class TestEnhancedQuantumRouter:
+    """Test the EnhancedQuantumRouter class."""
     
     def setup_method(self):
         """Set up test fixtures."""
-        self.router = QuantumRouter()
+        self.router = EnhancedQuantumRouter()
     
     def test_router_initialization(self):
         """Test router initializes correctly."""
@@ -229,7 +229,7 @@ class TestPerformance:
         for i in range(0, 19, 2):
             qc.cx(i, i + 1)
 
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
 
         # Routing should complete successfully
         result = router.select_optimal_backend(qc)

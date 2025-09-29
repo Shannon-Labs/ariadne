@@ -4,6 +4,7 @@ __version__ = "1.0.0"
 
 from .backends.cuda_backend import CUDABackend, get_cuda_info, simulate_cuda
 from .backends.metal_backend import MetalBackend, get_metal_info, simulate_metal
+from .route.enhanced_router import EnhancedQuantumRouter
 from .router import (
     BackendCapacity,
     BackendType,
@@ -18,6 +19,7 @@ __all__ = [
     "RoutingDecision",
     "SimulationResult",
     "BackendCapacity",
+    "EnhancedQuantumRouter",
     "CUDABackend",
     "simulate_cuda",
     "get_cuda_info",

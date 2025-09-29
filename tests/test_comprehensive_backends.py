@@ -12,26 +12,26 @@ from unittest.mock import Mock, patch
 from qiskit import QuantumCircuit
 
 # Import Ariadne components
-from ariadne.router import QuantumRouter, BackendType, simulate
+from ariadne.router import EnhancedQuantumRouter, BackendType, simulate
 from ariadne.backends.metal_backend import MetalBackend, is_metal_available
 from ariadne.backends.cuda_backend import CUDABackend, is_cuda_available
 from ariadne.simulation import QuantumSimulator, SimulationOptions
 from ariadne.route.analyze import analyze_circuit
 
 
-class TestQuantumRouter:
-    """Test cases for the quantum router."""
+class TestEnhancedQuantumRouter:
+    """Test cases for the enhanced quantum router."""
     
     def test_router_initialization(self):
         """Test router initialization with default settings."""
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
         assert router is not None
         assert len(router.backend_capacities) > 0
         assert BackendType.STIM in router.backend_capacities
     
     def test_circuit_entropy_calculation(self):
         """Test circuit entropy calculation."""
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
         
         # Simple circuit
         qc = QuantumCircuit(2)
@@ -44,7 +44,7 @@ class TestQuantumRouter:
     
     def test_backend_selection_clifford(self):
         """Test backend selection for Clifford circuits."""
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
         
         # Create Clifford circuit
         qc = QuantumCircuit(3, 3)
@@ -61,7 +61,7 @@ class TestQuantumRouter:
     
     def test_backend_selection_non_clifford(self):
         """Test backend selection for non-Clifford circuits."""
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
         
         # Create non-Clifford circuit
         qc = QuantumCircuit(2, 2)
@@ -78,7 +78,7 @@ class TestQuantumRouter:
     
     def test_simulation_with_fallback(self):
         """Test simulation with fallback mechanism."""
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
         
         # Simple circuit that should work on any backend
         qc = QuantumCircuit(2, 2)
@@ -95,7 +95,7 @@ class TestQuantumRouter:
     
     def test_capacity_calibration_integration(self):
         """Test integration with calibration system."""
-        router = QuantumRouter(use_calibration=True)
+        router = EnhancedQuantumRouter(use_calibration=True)
         
         # Test capacity update
         original_capacity = router.backend_capacities[BackendType.QISKIT].general_capacity
@@ -515,7 +515,7 @@ class TestErrorHandling:
     
     def test_invalid_circuit_handling(self):
         """Test handling of invalid circuits."""
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
         
         # Empty circuit
         qc = QuantumCircuit(0)
@@ -525,7 +525,7 @@ class TestErrorHandling:
     
     def test_zero_shots_handling(self):
         """Test handling of invalid shot counts."""
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
         
         qc = QuantumCircuit(1, 1)
         qc.h(0)
@@ -536,7 +536,7 @@ class TestErrorHandling:
     
     def test_backend_failure_fallback(self):
         """Test fallback behavior when backends fail."""
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
         
         # Create a circuit that should work
         qc = QuantumCircuit(2, 2)
@@ -560,7 +560,7 @@ class TestPerformanceRequirements:
     
     def test_small_circuit_performance(self):
         """Test performance requirements for small circuits."""
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
         
         qc = QuantumCircuit(3, 3)
         qc.h(0)
@@ -580,7 +580,7 @@ class TestPerformanceRequirements:
         """Test memory efficiency for various circuit sizes."""
         import psutil
         
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
         process = psutil.Process()
         
         # Measure memory before

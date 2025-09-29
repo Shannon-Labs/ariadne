@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import math
 import warnings
-from dataclasses import dataclass
-from enum import Enum
 from time import perf_counter
 from typing import Any
 import logging
@@ -14,6 +12,7 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 
+from .types import BackendType, BackendCapacity, RoutingDecision, SimulationResult
 from .backends.mps_backend import MPSBackend
 from .backends.tensor_network_backend import TensorNetworkBackend
 from .route.analyze import analyze_circuit, should_use_tensor_network
@@ -35,52 +34,6 @@ except ImportError:  # pragma: no cover - executed when dependencies missing
 
     def is_metal_available() -> bool:  # type: ignore[override]
         return False
-
-class BackendType(Enum):
-    """Available quantum simulation backends."""
-
-    STIM = "stim"
-    QISKIT = "qiskit"
-    TENSOR_NETWORK = "tensor_network"
-    JAX_METAL = "jax_metal"
-    DDSIM = "ddsim"
-    CUDA = "cuda"
-    MPS = "mps"
-
-
-@dataclass
-class BackendCapacity:
-    """Simple scoring model for backend suitability."""
-
-    clifford_capacity: float
-    general_capacity: float
-    memory_efficiency: float
-    apple_silicon_boost: float
-
-
-@dataclass
-class RoutingDecision:
-    """Information returned by the routing mechanism."""
-
-    circuit_entropy: float
-    recommended_backend: BackendType
-    confidence_score: float
-    expected_speedup: float
-    channel_capacity_match: float
-    alternatives: list[tuple[BackendType, float]]
-
-
-@dataclass
-class SimulationResult:
-    """Container for the output of :func:`simulate`."""
-
-    counts: dict[str, int]
-    backend_used: BackendType
-    execution_time: float
-    routing_decision: RoutingDecision
-    metadata: dict[str, Any]
-    fallback_reason: str | None = None  # Reason for backend fallback
-    warnings: list[str] | None = None   # Any warnings during execution
 
 
 # Global state for Tensor Network Backend instance

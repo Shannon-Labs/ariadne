@@ -9,7 +9,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from qiskit import QuantumCircuit
 
-from ariadne.router import QuantumRouter, BackendType, simulate
+from ariadne.router import EnhancedQuantumRouter, BackendType, simulate
 from ariadne.backends.metal_backend import MetalBackend
 
 
@@ -23,7 +23,7 @@ class TestErrorHandling:
         qc.cx(0, 1)
         qc.measure_all()
 
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
         
         # Mock the metal backend to fail
         with patch.object(router, '_simulate_jax_metal', side_effect=RuntimeError("Mock failure")):
@@ -76,7 +76,7 @@ class TestErrorHandling:
         qc.h(range(4))
         qc.measure_all()
 
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
         
         # Mock CUDA and Metal as unavailable
         router._cuda_available = False
@@ -138,7 +138,7 @@ class TestErrorHandling:
         qc.cx(0, 1)
         qc.measure_all()
 
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
         
         # Mock multiple backends to fail
         with patch.object(router, '_simulate_stim', side_effect=RuntimeError("Stim failed")):
@@ -159,7 +159,7 @@ class TestErrorHandling:
         qc.cx(0, 1)
         qc.measure_all()
 
-        router = QuantumRouter()
+        router = EnhancedQuantumRouter()
         
         # Force JAX_METAL selection to generate experimental warning
         with patch.object(router, 'select_optimal_backend') as mock_select:
