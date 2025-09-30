@@ -1,9 +1,12 @@
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+*.$py.class
+
+# C extensions
 *.so
+
+# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -17,30 +20,40 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# Benchmark results
-benchmarks/results/*.json
+# PyInstaller
+#  Usually these files are written by a script go in a subdirectory of dist/
+#  but can be written in top level directory
+*.spec
 
-# IDE and editor files
-.vscode/
+
+# Pytest
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+
+# Reports
+bandit-report.json
+safety-report.json
+benchmark_results_*.json
+
+# Plots
+ariadne_plots/
+
+# Docs
+docs/build/
+
+# IDEs
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
-
-# Environment
-.env
-venv/
-env/
-ENV/
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
-# CI/CD
-.github/

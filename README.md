@@ -15,7 +15,7 @@ Ariadne is an intelligent quantum circuit router that automatically analyzes cir
 
 The routing system is designed for transparency and determinism - every routing decision is based on measurable circuit characteristics and can be audited for correctness.
 
-[📚 Documentation Site](https://shannon-labs.github.io/ariadne) • [📖 Local Docs](docs/README.md) • [💡 Examples](examples/README.md) • [🚀 Getting Started](#-getting-started) • [📊 Benchmarks](#-benchmarks) • [🤝 Contributing](#-contributing)
+[📖 Local Docs](docs/README.md) • [💡 Examples](examples/README.md) • [🚀 Getting Started](#-getting-started) • [📊 Benchmarks](#-benchmarks) • [🤝 Contributing](#-contributing)
 
 ---
 
@@ -97,7 +97,7 @@ print(f"Unique outcomes: {len(result.counts)}")
 
 ---
 
-##  usage
+## Usage
 
 Ariadne provides a simple, unified API for quantum circuit simulation.
 
@@ -126,15 +126,15 @@ print(f"Backend used: {result.backend_used}")  # -> stim
 
 ### Apple Silicon Metal vs. CPU
 
-| Circuit archetype | Qiskit CPU (ms) | Ariadne Metal (ms) | Speedup |
-|-------------------|-----------------|--------------------|---------|
-| Small Clifford (H+CX) | 0.64 | 0.45 | **1.43×** |
-| Medium Clifford | 1.05 | 0.63 | **1.66×** |
-| Small general (H, CX, RY) | 0.76 | 0.42 | **1.82×** |
-| Medium general | 1.15 | 0.68 | **1.67×** |
-| Large Clifford | 1.90 | 1.34 | **1.41×** |
+| Circuit       | Qiskit CPU (ms) | Ariadne Metal (ms) | Speedup |
+|---------------|-----------------|--------------------|---------|
+| circuit-166   | 0.69            | 0.43               | **1.59×** |
+| circuit-167   | 1.02            | 0.67               | **1.52×** |
+| circuit-168   | 0.78            | 0.49               | **1.61×** |
+| circuit-169   | 1.19            | 0.59               | **2.01×** |
+| circuit-170   | 1.86            | 0.88               | **2.13×** |
 
-*Results from `benchmarks/results/metal_benchmark_results.json` on an Apple M4 Max MacBook Pro.*
+*Results from `benchmarks/metal_benchmark_results.json` on an Apple M4 Max MacBook Pro.*
 
 ### Router Overhead
 
@@ -160,7 +160,7 @@ cd ariadne
 pip install -e .[dev]
 
 # Run unit tests
-make test
+pytest
 ```
 
 ---
@@ -169,7 +169,6 @@ make test
 
 - **GitHub Discussions:** [Ask questions and share ideas](https://github.com/Shannon-Labs/ariadne/discussions)
 - **Issue Tracker:** [Report bugs and request features](https://github.com/Shannon-Labs/ariadne/issues)
-- **Twitter:** [Follow @ShannonLabs for updates](https://twitter.com/shannonlabs)
 
 ---
 

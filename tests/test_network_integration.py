@@ -158,7 +158,7 @@ class TestQuantumTask:
 
 
 @pytest.mark.skipif(not NETWORK_COORDINATION_AVAILABLE, reason="Network coordination not available")
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestNetworkCoordinator:
     """Test suite for network coordinator functionality."""
     
@@ -388,7 +388,7 @@ class TestNetworkCoordinator:
 
 @pytest.mark.skipif(not NETWORK_COORDINATION_AVAILABLE or not WEBSOCKETS_AVAILABLE, 
                    reason="Network coordination or WebSockets not available")
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestNetworkIntegration:
     """Integration tests for full network scenarios."""
     

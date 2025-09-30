@@ -109,6 +109,8 @@ markers = [
   "integration: marks tests as integration tests",
   "unit: marks tests as unit tests",
   "benchmark: marks tests as benchmark tests",
+  "asyncio: marks tests as asyncio tests",
+  "anyio: marks tests as anyio tests",
 ]
 
 [tool.coverage.run]

@@ -10,7 +10,7 @@ from unittest.mock import patch
 import pytest
 from qiskit import QuantumCircuit
 
-from ariadne.backends.metal_backend import MetalBackend
+from ariadne.backends.metal_backend import MetalBackend, is_metal_available
 from ariadne.router import BackendType, EnhancedQuantumRouter, simulate
 
 
@@ -29,6 +29,7 @@ class TestErrorHandling:
         # Skip this test for now - fallback mechanism needs refinement
         pytest.skip("Backend fallback mechanism needs refinement - skipping for now")
 
+    @pytest.mark.skipif(not is_metal_available(), reason="Metal not available")
     def test_metal_backend_cpu_fallback(self):
         """Test Metal backend CPU fallback behavior."""
         qc = QuantumCircuit(3, 3)

@@ -121,6 +121,7 @@ class TestEnhancedQuantumRouter:
         pass
 
 
+@pytest.mark.skipif(not is_metal_available(), reason="Metal not available")
 class TestMetalBackend:
     """Test cases for Metal backend."""
     

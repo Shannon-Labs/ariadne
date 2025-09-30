@@ -6,6 +6,13 @@ CONTRIBUTING.md
 Dockerfile
 LICENSE
 README.md
+benchmark_results_1759132716.json
+benchmark_results_1759133353.json
+benchmark_results_1759133743.json
+benchmark_results_1759133827.json
+benchmark_results_1759133900.json
+benchmark_results_1759147615.json
+benchmark_results_1759148233.json
 docker-compose.yml
 pyproject.toml
 .github/pull_request_template.md
@@ -58,7 +65,10 @@ docs/apple_silicon_notes.md
 docs/cuda_backend_roadmap.md
 docs/cuda_performance_report.md
 docs/equivalence_proofs.md
+docs/installation.md
+docs/quickstart.md
 docs/router_decisions.md
+docs/troubleshooting.md
 docs/project/CHANGELOG.md
 docs/project/CITATIONS.bib
 docs/project/CONTRIBUTING.md
@@ -128,6 +138,7 @@ src/ariadne/__pycache__/router.cpython-312.pyc
 src/ariadne/analysis/competitive_analysis.py
 src/ariadne/backends/__init__.py
 src/ariadne/backends/cirq_backend.py
+src/ariadne/backends/cpu_backend.py
 src/ariadne/backends/cuda_backend.py
 src/ariadne/backends/cuda_kernels.py
 src/ariadne/backends/intel_qs_backend.py
@@ -188,5 +199,6 @@ tests/test_performance_validation.py
 tests/test_qcec_equiv.py
 tests/test_router_selection.py
 tests/test_routing.py
+tests/test_visualization.py
 tests/test_zne_improves.py
 tests/__pycache__/test_algorithm_validation.cpython-312-pytest-8.3.5.pyc
